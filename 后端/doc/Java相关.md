@@ -594,6 +594,21 @@ return h & (length-1); //第三步 取模运算
 ### ConcurrentHashMap
 
    结构和上面一致 。都使用了数组+ 链表+ 红黑树
+1.7 
+
+1. 基于segment 分段锁实现
+2. 每个segment 相对于一个小型的hashmap
+3. 每个segment 内部会进行扩容，和hashmap 的扩容逻辑类似
+4. 先生成新的数组，然后转移元素到新的数组中
+5. 扩容的判断也是每个segment 内部单独判断，判断是否超过阈值
+
+1.8
+
+1. 当某个线程进行put时，如果发现正在进行扩容，那么该线程一起进行扩容
+2. 如果某个线程put ，发现没有进行扩容时，则put 数据，然后判断是否超过阈值，超过则进行扩容
+3. 支持多个线程 同时扩容
+4. 扩容前，也先生成一个新的数组
+5. 在转移元素时，先将原数组进行分组，将每组分给不同的线程来进行元素的转移，每个线程负责一组或多组元素转移工作
 
 
 
@@ -1089,6 +1104,7 @@ Java  中  Synchronize  通 过 在 对 象 头 设 置 标 记 ， 达 到 了 
 1. Thread类有一个类型为ThreadLocal.ThreadLocalMap的实例变量threadLocals，即每个线程都有一个属于自己的ThreadLocalMap
 2. ThreadLocalMap内部维护着Entry数组，每个Entry代表一个完整的对象，key是ThreadLocal本身，value是ThreadLocal的泛型值
 3. 每个线程在往ThreadLocal里设置值的时候，都是往自己的ThreadLocalMap里存，读也是以某个ThreadLocal作为引用，在自己的map里找对应的key，从而实现了线程隔离
+4. thread local 经典的应用场景是连接管理 ，一个线程持有一个连接，该连接对象可以在不同的方法之间进行传递。 线程之间不共享同一个连接
 
 ### ThreadLocal 是 怎 么 解 决 并 发 安 全 的
 
@@ -1144,6 +1160,11 @@ ThreadLocal 的 实 现 是 基 于 一 个 所 谓 的 ThreadLocalMap， 在Thr
 ReentrantLock 类实现了Lock ，它拥有与synchronized 相同的并发性和内存语义，但是添加了类似锁投票、定时锁等候和可中断锁等候的一些特性。此外，它还提供了在激烈争用情况下更佳的性能。（换句话说，当许多线程都想访问共享资源时，JVM可以花更少的时候来调度线程，把更多时间用在执行线程上。
 
 他是一种可重入锁，除了能完成 synchronized 所能完成的所有工作外，还提供了诸如可响应中断锁、可轮询锁请求、定时锁等避免多线程死锁的方法
+
+### ReentrantLock 的tryLock  和lock 方法
+
+1. tryLock  表示尝试加锁，可能加到，可能加不到，该方法不会阻塞线程，如果加到锁则返回true ，没有加到，则返回false
+2. lock  表示阻塞加锁，线程会阻塞知道加锁，方法也没有返回值
 
 ### Semaphore  与 ReentrantLock
 
