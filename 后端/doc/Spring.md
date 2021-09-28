@@ -42,6 +42,15 @@ Spring 中的 IoC 的实现原理就是工厂模式加反射机制
 3. 它们由 Spring IoC 容器实例化，配置，装配和管理。
 4. Bean 是基于用户提供给容器的配置元数据创建
 
+### Spring Bean 是线程安全的吗
+
+spring 本身并没有针对Bean 做线程安全处理 所以
+
+1. 如果Bean 是无状态的，那么Bean 是线程安全的
+2. 如果Bean 是有状态的，则不是线程安全的
+
+
+
 ### spring 支持的 bean scope
 
 Singleton - 默认，每个容器中只有一个bean的实例，单例的模式由BeanFactory自身来维护
@@ -55,6 +64,13 @@ Session - 每一次 HTTP 请求都会产生一个新的 bean，同时该 bean �
 Global-session -  全局作用域，global-session和Portlet应用相关。当你的应用部署在Portlet容器中工作时，它包含很多portlet。如果你想要声明让所有的portlet共用全局的存储变量的话，那么这全局变量需要存储在global-session中。全局作用域与Servlet中的session作用域效果相同
 
 仅当用户使用支持 Web 的 Application Context 时，最后三个才可用
+
+### spring 容器启动流程是怎么样的
+
+1. 首先会进行扫描，扫描得到所有的BeanDefinition对象，并存放在一个Map 中
+2. 然后筛选出非懒加载的单例BeanDefinition 进行创建bean ，对于多例bean不需要再启动过程中进行创建，对于多利bean 会在每次获取 bean 时利用beanDefinition去创建
+3. 利用BeanDefinition 创建 Bean
+4. 单例Bean 创建完之后，spring 会发布一个容器启动事件
 
 ![image-20210806111818713](https://gitee.com/Sean0516/image/raw/master/img/image-20210806111818713.png)
 
@@ -162,11 +178,15 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 ### Spring框架中都用到了哪些设计模式
 
-（1）工厂模式：BeanFactory就是简单工厂模式的体现，用来创建对象的实例；
-（2）单例模式：Bean默认为单例模式。
-（3）代理模式：Spring的AOP功能用到了JDK的动态代理和CGLIB字节码生成技术；
-（4）模板方法：用来解决代码重复的问题。比如. RestTemplate, JmsTemplate, JpaTemplate。
-（5）观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener
+1. 工厂模式：BeanFactory就是简单工厂模式的体现，用来创建对象的实例；
+2. 单例模式：Bean默认为单例模式。
+3. 代理模式：Spring的AOP功能用到了JDK的动态代理和CGLIB字节码生成技术；
+4. 模板方法：用来解决代码重复的问题。比如. RestTemplate, JmsTemplate, JpaTemplate。
+5. 观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener
+6. 适配器模式 advisorAdapter 接口
+7. 责任链模式  BeanPostProcessor
+
+
 
 ### 哪些是重要的 bean 生命周期方法？
 
@@ -202,6 +222,25 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 2. 它将使您的应用程序易于测试，因为它不需要单元测试用例中的任何单例或 JNDI 查找机制。
 3. 它以最小的影响和最少的侵入机制促进松耦合。
 4. 它支持即时的实例化和延迟加载服务
+
+### Spring 中的事务是如何实现的
+
+1. spring  事务底层是基于数据库事务和AOP机制
+2. 首先对使用@Transactional 注解的Bean ,spring 会创建一个代理对象作为Bean
+3. 当调用代理对象的方法时，会先判断该方法是否加上了@Transactional 注解
+4. 如果加了，则利用事务管理器创建一个数据库连接
+5. 并且修改数据库连接的auto commit属性 为false ，禁止此连接的自动提交。
+6. 然后执行当前方法，方法中会执行sql
+7. 执行完当前方法后，如果没有出现异常，则直接提交事务，。
+8. 如果出现事务，并且这个异常是需要会管的，就会提交事务，否则任然提交事务
+
+
+
+### Spring 中什么时候@Transactional 会失效
+
+因为spring 事务是基于代理来实现的，所以某个加了@Transactional 的方法只有是被代理对象调用时，那么注解才会生效
+
+同时，如果某个方法是private 的，那么@Transactional 也会失效，因为底层cglib 是基于父子类来实现的，子类是不能重载父类的private方法的。 所以无法很好的利用代理。 也会导致注解失效
 
 ### spring的事务传播行为
 
@@ -290,7 +329,7 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 
 @SpringBootConfiguration：组合了 @Configuration 注解，实现配置文件的功能。
 @EnableAutoConfiguration：打开自动配置的功能，也可以关闭某个自动配置的选项，如关闭数据源自动配置功能：
-@ComponentScan：Spring组件扫描
+@ComponentScan：标识扫描路径，因为默认是没有实际扫描路径 ，所以spring boot 扫描的路径是启动类所在的当前目录
 
 ### Spring Boot启动的时候运行一些特定的代码
 
@@ -308,6 +347,24 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 4. 其中一个方法 postProcessBeanDefinitionRegistry会 去调用 processConfigBeanDefinitions解析 beandefinitions
 5. 在 processConfigBeanDefinitions 中有一个 parse 方法，其中有 componentScanParser.parse的方法，这个方法会扫描当前路径下所有 Component 组件
 
+### Spring boot 是如何启动tomcat
+
+1. 首先springboot 在启动时，会先创建一个spring 容器‘
+2. 在创建spring容器过程中，会利用@ConditionalOnClass 技术来判断当前classpath 中是否存在tomcat 依赖，如果存在，则生成一个启动tomcat的bean
+3. spring 容器创建完之后，会获取启动tomcat 的bean ，并创建tomcat 对象，并绑定端口等。 然后启动tomcat
+
+### Spring Boot  中配置文件的加载顺序是怎么样的
+
+优先级从高到低。
+
+1. 命令行参数
+2. 来自java comp env  的jndi 属性
+3. Java 系统属性
+4. 操作系统环境变量
+5. jar 包外的 yml 配置文件
+6. jar 包内部的yml 文件
+7. @Configuration 注解上的@PropertySource 
+
 # Spring Cloud 
 
 ### 什么是 Hystrix？它如何实现容错
@@ -322,11 +379,24 @@ Hystrix 是一个延迟和容错库，旨在隔离远程系统，服务和第三
 
 spring cloud bus 将分布式的节点用轻量的消息代理连接起来，它可以用于广播配置文件的更改或者服务直接的通讯，也可用于监控。如果修改了配置文件，发送一次请求，所有的客户端便会重新读取配置文件
 
+### 什么是服务雪崩，什么是服务限流i
+
+1. 当服务A 调用服务B ，服务B 调用C ，此时大量请求突然请求服务A ，加入服务A 本身可以抗住这些请求，但是如果服务C 扛不住，导致服务C 请求堆积，从而服务B 请求堆积。 从而服务A 不可用，这就是服务雪崩。 解决方式是服务降级和服务熔断
+2. 服务限流是指高并发请求下，为了保护系统，可以对访问服务的请求进行数量上的限制，从而防止系统不被大量请求压垮。
+
+
+
 ### 什么是服务熔断？什么是服务降级
 
 熔断机制是应对雪崩效应的一种微服务链路保护机制。当某个微服务不可用或者响应时间太长时，会进行服务降级，进而熔断该节点微服务的调用，快速返回“错误”的响应信息。当检测到该节点微服务调用响应正常后恢复调用链路。在SpringCloud框架里熔断机制通过Hystrix实现，Hystrix会监控微服务间调用的状况，当失败的调用到一定阈值，缺省是5秒内调用20次，如果失败，就会启动熔断机制
 
 服务降级，一般是从整体负荷考虑。就是当某个服务熔断之后，服务器将不再被调用，此时客户端可以自己准备一个本地的fallback回调，返回一个缺省值。这样做，虽然水平下降，但好歹可用，比直接挂掉强
+
+熔断是下游服务故障触发的，降级是为了降低系统负载
+
+
+
+
 
 ### Spring Cloud Gateway
 
