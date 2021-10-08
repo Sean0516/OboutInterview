@@ -184,7 +184,7 @@ i++ ： 先赋值，后计算
 
    
 
-### 内部类和静态内部类的区别s
+### 内部类和静态内部类的区别
 
 - 静态内部类
 
@@ -726,7 +726,7 @@ java 中的泛型基本上都是在编译器这个层次来实现的。在生成
 
 以集合来举例，使用泛型的好处是我们不必因为添加元素类型的不同而定义不同类型的集合，如整型集合类，浮点型集合类，字符串集合类，我们可以定义一个集合来存放整型、浮点型，字符串型数据，而这并不是最重要的，因为我们只要把底层存储设置了Object即可，添加的数据全部都可向上转型为Object。 更重要的是我们可以通过规则按照自己的想法控制存储的数据类型
 
-泛型中 extends  和 super  的区别
+### 泛型中 extends  和 super  的区别
 
 1. <? extends  T> 表示包括T 在内的任何T的子类
 2. <? super T > 表示包亏T在内的任何T 的父类
@@ -1194,7 +1194,7 @@ Semaphore的锁释放操作也由手动进行，因此与 ReentrantLock 一样�
 
 ### ReentrantLock 是 如 何 实 现 可 重 入 性 的 
 
-ReentrantLock 内 部 自 定 义 了 同 步 器 Sync（ Sync 既 实 现 了 AQS，又 实 现 了 AOS， 而 AOS 提 供 了 一 种 互 斥 锁 持 有 的 方 式 ） ， 其 实 就 是加 锁 的 时 候 通 过 CAS 算 法 ， 将 线 程 对 象 放 到 一 个 双 向 链 表 中 ， 每 次 获取 锁 的 时 候 ， 看 下 当 前 维 护 的 那 个 线 程 ID 和 当 前 请 求 的 线 程 ID 是 否一 样 ， 一 样 就 可 重 入 了
+ReentrantLock 内 部 自 定 义 了 同 步 器 Sync（ Sync 既 实 现 了 AQS，又 实 现 了 AOS， 而 AOS 提 供 了 一 种 互 斥 锁 持 有 的 方 式 ） ， 其 实 就 是加 锁 的 时 候 通 过 CAS 算 法 ， 将 线 程 对 象 放 到 一 个 双 向 链 表 中 ， 每 次 获取 锁 的 时 候 ， 看 下 当 前 维 护 的 那 个 线 程 ID 和 当 前 请 求 的 线 程 ID 是 否一 样 ， 这样 就 可 重 入 了
 
 ### synchronized和ReentrantLock的区别
 
@@ -1472,7 +1472,7 @@ CAS  具 有 原 子 性 ， 它 的 原 子 性 由  CPU  硬 件 指 令 实 �
 
 ### 什么是AQS
 
-AQS 是 AbstactQueuedSynchronizer 的简称，它是一个 Java 提高的底层同步工具类，用一个 int 类型的变量表示同步状态，并提供了一系列的 CAS 操作来管理这个同步状态 
+AQS 是 AbstactQueuedSynchronizer 的简称，它是一个 Java 提供的底层同步工具类，用一个 int 类型的变量表示同步状态，并提供了一系列的 CAS 操作来管理这个同步状态
 
 AQS 是一个用来构建锁和同步器的框架，使用 AQS 能简单且高效地构造出应用广泛的大量的同步器，比如我们提到的 ReentrantLock，Semaphore，其他的诸如ReentrantReadWriteLock，SynchronousQueue，FutureTask 等等皆是基于AQS 的
 
