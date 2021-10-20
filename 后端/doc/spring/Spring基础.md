@@ -4,9 +4,61 @@
 
 
 
-Spring IOC 流程
+## IOC
+
+### IOC创建对象的过程图 （BeanFactory）
+
+![image-20211020092633386](https://gitee.com/Sean0516/image/raw/master/img/image-20211020092633386.png)
 
 
+
+### spring bean 容器的生命周期
+
+1. Spring 容器根据配置中的 bean 定义中实例化 bean。
+
+   对于BeanFactory容器，当客户向容器请求一个尚未初始化的bean时，或初始化bean的时候需要注入另一个尚未初始化的依赖时，容器就会调用createBean进行实例化。对于ApplicationContext容器，当容器启动结束后，通过获取BeanDefinition对象中的信息，实例化所有的bean
+
+2. Spring 使用依赖注入填充所有属性，如 bean 中所定义的配置。实例化后的对象被封装在BeanWrapper对象中，紧接着，Spring根据BeanDefinition的信息 以及 通过BeanWrapper提供的设置属性的接口完成依赖注入
+
+3. 如果 bean 实现BeanNameAware 接口，则工厂通过传递 bean 的 ID 来调用setBeanName()。
+
+4. 如果 bean 实现 BeanFactoryAware 接口，工厂通过传递自身的实例来调用 setBeanFactory()。
+
+5. 如果存在与 bean 关联的任何BeanPostProcessors，则调用 preProcessBeforeInitialization() 方法。
+
+6. 如果为 bean 指定了 init 方法（ 的 init-method 属性），那么将调用它。
+
+7. 最后，如果存在与 bean 关联的任何 BeanPostProcessors，则将调用 postProcessAfterInitialization() 方法 ，创建代理。
+
+8. 如果 bean 实现DisposableBean 接口，当 spring 容器关闭时，会调用 destory()。
+
+9. 如果为bean 指定了 destroy 方法（ 的 destroy-method 属性），那么将调用它
+
+![image-20210806111818713](https://gitee.com/Sean0516/image/raw/master/img/image-20210806111818713.png)
+
+### Aware 接口存在的意义
+
+主要是方便通过spring 中的bean 对象来获取对应容器中的相关属性
+
+### 如何解决循环依赖问题
+
+![image-20211020110251764](https://gitee.com/Sean0516/image/raw/master/img/image-20211020110251764.png)
+
+​	使用三级缓存解决（实例化和初始化分开处理，在中间过程中，给其他对象赋值的时候，并不是一个完整对象，而是把半成品对象赋值给其他对象。 提前暴露对象）  ，  set 方式可以解决循环依赖（set 先创建对象，再进行赋值） ，而构造方法是没有办法解决循环依赖问题的
+
+### 如果只使用一级缓存能否解决循环依赖的问题
+
+不能，因为在整个处理过程中，缓存中放的是初始化完成和未初始化的对象，如果只有一级缓存，那么初始化和未初始化的对象都会放在一级缓存中。有可能在获取过程中获取到未初始化的对象，而未初始化的对象是不能使用的。 不能直接进行相关处理。 因此需要分开来存储 
+
+二级缓存为什么解决不了AOP代理的场景了
+
+
+
+###  为什么使用三级缓存能够解决循环依赖
+
+
+
+ ![image-20211020105730858](https://gitee.com/Sean0516/image/raw/master/img/image-20211020105730858.png)
 
 ### 什么是Spring IOC 容器
 
@@ -38,6 +90,8 @@ ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它
 ### Spring IoC 的实现机制
 
 Spring 中的 IoC 的实现原理就是工厂模式加反射机制
+
+
 
 ### 什么是 spring bean
 
@@ -76,29 +130,7 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 3. 利用BeanDefinition 创建 Bean
 4. 单例Bean 创建完之后，spring 会发布一个容器启动事件
 
-![image-20210806111818713](https://gitee.com/Sean0516/image/raw/master/img/image-20210806111818713.png)
 
-### spring bean 容器的生命周期
-
-1. Spring 容器根据配置中的 bean 定义中实例化 bean。
-
-   对于BeanFactory容器，当客户向容器请求一个尚未初始化的bean时，或初始化bean的时候需要注入另一个尚未初始化的依赖时，容器就会调用createBean进行实例化。对于ApplicationContext容器，当容器启动结束后，通过获取BeanDefinition对象中的信息，实例化所有的bean
-
-2. Spring 使用依赖注入填充所有属性，如 bean 中所定义的配置。实例化后的对象被封装在BeanWrapper对象中，紧接着，Spring根据BeanDefinition的信息 以及 通过BeanWrapper提供的设置属性的接口完成依赖注入
-
-3. 如果 bean 实现BeanNameAware 接口，则工厂通过传递 bean 的 ID 来调用setBeanName()。
-
-4. 如果 bean 实现 BeanFactoryAware 接口，工厂通过传递自身的实例来调用 setBeanFactory()。
-
-5. 如果存在与 bean 关联的任何BeanPostProcessors，则调用 preProcessBeforeInitialization() 方法。
-
-6. 如果为 bean 指定了 init 方法（ 的 init-method 属性），那么将调用它。
-
-7. 最后，如果存在与 bean 关联的任何 BeanPostProcessors，则将调用 postProcessAfterInitialization() 方法。
-
-8. 如果 bean 实现DisposableBean 接口，当 spring 容器关闭时，会调用 destory()。
-
-9. 如果为bean 指定了 destroy 方法（ 的 destroy-method 属性），那么将调用它
 
 ### @Autowired 注解有什么用
 
@@ -132,6 +164,10 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 3. After Throwing - 这些类型的 Advice 仅在 joinpoint 方法通过抛出异常退出并使用 @AfterThrowing 注解标记配置时执行。
 4. After (finally) - 这些类型的 Advice 在连接点方法之后执行，无论方法退出是正常还是异常返回，并使用 @After 注解标记进行配置。
 5. Around - 这些类型的 Advice 在连接点之前和之后执行，并使用@Around 注解标记进行配置
+
+
+
+## MVC
 
 ![image-20210806112045164](C:\Users\Sean\AppData\Roaming\Typora\typora-user-images\image-20210806112045164.png)
 
@@ -220,12 +256,7 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 而Servlet的filter是基于函数回调实现的过滤器，Filter主要是针对URL地址做一个编码的事情、过滤掉没用的参数、安全校验（比较泛的，比如登录不登录之类）
 
-### 列举 IoC 的一些好处
-
-1. 它将最小化应用程序中的代码量
-2. 它将使您的应用程序易于测试，因为它不需要单元测试用例中的任何单例或 JNDI 查找机制。
-3. 它以最小的影响和最少的侵入机制促进松耦合。
-4. 它支持即时的实例化和延迟加载服务
+## 事务
 
 ### Spring 中的事务是如何实现的
 
