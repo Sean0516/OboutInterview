@@ -12,6 +12,25 @@
 
 
 
+### IOC 创建对象的流程
+
+1. 准备工作
+2. 创建容器对象
+3. 读取xml  注解或者json 加载 BeanDeFinition 对象
+4. 给容器对象进行某些初始化操作
+5. 执行BeanFactoryPostProcessor 的扩展工作
+6. 实例化前的准备工作
+   1. 注册BeanPostProcessor
+   2. 初始化广播器
+   3. 国际化的相关配置
+   4. 注册监听器
+7. 对象的实例化操作
+8. 自定义属性赋值
+9. 容器对象属性赋值 populateBean 
+10. 调用BeanPostProcessor 前置处理方法进行扩展
+11. 调用init Method 方法进行初始化方法的调用
+12. 调用BeanPostProcessor 的后置处理方法进行扩展
+
 ### spring bean 容器的生命周期
 
 1. Spring 容器根据配置中的 bean 定义中实例化 bean。
@@ -40,11 +59,42 @@
 
 主要是方便通过spring 中的bean 对象来获取对应容器中的相关属性
 
+
+
+### refresh方法
+
+## 循环依赖
+
+### 什么是循环依赖
+
+A B 对象相互依赖对方
+
+![image-20211021113623954](https://gitee.com/Sean0516/image/raw/master/img/image-20211021113623954.png)
+
 ### 如何解决循环依赖问题
 
 ![image-20211020110251764](https://gitee.com/Sean0516/image/raw/master/img/image-20211020110251764.png)
 
 ​	使用三级缓存解决（实例化和初始化分开处理，在中间过程中，给其他对象赋值的时候，并不是一个完整对象，而是把半成品对象赋值给其他对象。 提前暴露对象）  ，  set 方式可以解决循环依赖（set 先创建对象，再进行赋值） ，而构造方法是没有办法解决循环依赖问题的
+
+
+
+### 如何使用三级缓存解决循环依赖
+
+ ![image-20211020105730858](https://gitee.com/Sean0516/image/raw/master/img/image-20211020105730858.png)
+
+```java
+/** Cache of singleton objects: bean name to bean instance. */
+private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256); // 一级缓存
+
+/** Cache of singleton factories: bean name to ObjectFactory. */
+private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16); // 三级缓存
+
+/** Cache of early singleton objects: bean name to bean instance. */
+private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16); // 二级缓存
+```
+
+
 
 ### 如果只使用一级缓存能否解决循环依赖的问题
 
@@ -58,7 +108,7 @@
 
 
 
- ![image-20211020105730858](https://gitee.com/Sean0516/image/raw/master/img/image-20211020105730858.png)
+
 
 ### 什么是Spring IOC 容器
 
@@ -71,7 +121,7 @@ Spring 框架的核心是 Spring 容器。容器创建对象，将它们装配�
 3. 它以最小的影响和最少的侵入机制促进松耦合。
 4. 它支持即时的实例化和延迟加载服务
 
-### 什么是依赖注入
+### 什么是依赖注入 DI
 
 在依赖注入中，您不必创建对象，但必须描述如何创建它们。您不是直接在代码中将组件和服务连接在一起，而是描述配置文件中哪些组件需要哪些服务。由 IoC容器将它们装配在一起
 
@@ -87,18 +137,13 @@ ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它
 | 不支持国际化             | 支持国际化             |
 | 不支持基于依赖的注解     | 支持基于依赖的注解     |
 
+
+
 ### Spring IoC 的实现机制
 
 Spring 中的 IoC 的实现原理就是工厂模式加反射机制
 
 
-
-### 什么是 spring bean
-
-1. 它们是构成用户应用程序主干的对象。
-2. Bean 由 Spring IoC 容器管理。
-3. 它们由 Spring IoC 容器实例化，配置，装配和管理。
-4. Bean 是基于用户提供给容器的配置元数据创建
 
 ### Spring Bean 是线程安全的吗
 
