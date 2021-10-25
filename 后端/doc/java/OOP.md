@@ -229,46 +229,6 @@ System.out.println(x == z); // false
 
 String x = "张三" 的方式，Java 虚拟机会将其分配到常量池中，而常量池中没有重复的元素，比如当执行“张三”时，java虚拟机会先在常量池中检索是否已经有“张三”,如果有那么就将“张三”的地址赋给变量，如果没有就创建一个，然后在赋给变量；而 String z = new String(“张三”) 则会被分到堆内存中，即使内容一样还是会创建新的对象
 
-### 强引用，弱引用，软引用和虚引用
-
-- 强引用
-
-  强引用是平常中使用最多的引用，强引用在程序内存不足（OOM）的时候也不会被回收，使用方式
-
-  ```java
-  String str = new String("str");
-  ```
-
-  
-
-- 软引用
-
-  软引用在程序内存不足时，会被回收。 
-
-  可用场景： 创建缓存的时候，创建的对象放进缓存中，当内存不足时，JVM就会回收早先创建的对象
-
-  ```java
-  // 注意：wrf这个引用也是强引用，它是指向SoftReference这个对象的，
-  // 这里的软引用指的是指向new String("str")的引用，也就是SoftReference类中T
-  SoftReference<String> wrf = new SoftReference<String>(new String("str"));
-  ```
-
-- 弱引用
-
-  弱引用就是只要JVM 垃圾收集器发现它，就会将之回收 . 一旦我不需要某个引用，JVM会自动帮我处理它，这样我就不需要做其它操作
-
-  ```java
-  WeakReference<String> weakReference=new WeakReference<>("sss");
-  ```
-
-- 虚引用
-
-  虚引用的回收机制跟弱引用差不多，但是它被回收之前，会被放入ReferenceQueue中。注意哦，其它引用是被JVM回收后才被传入ReferenceQueue中的。由于这个机制，所以虚引用大多被用于引用销毁前的处理工作。还有就是，虚引用创建的时候，必须带有ReferenceQueue，使用
-
-  ```java
-  PhantomReference<String> phantomReference=new PhantomReference<>("demo",new ReferenceQueue<>());
-  ```
-
 ### java 创建对象的几种方式
 
 1. new 创建新对象

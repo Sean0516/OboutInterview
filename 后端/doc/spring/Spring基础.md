@@ -12,24 +12,27 @@
 
 
 
-### IOC 创建对象的流程
+
+
+### IOC 创建![6ca29c4f1cf4656f3c8b5e1b0f5f5a9a](https://gitee.com/Sean0516/image/raw/master/img/6ca29c4f1cf4656f3c8b5e1b0f5f5a9a.png)对象的流程
 
 1. 准备工作
-2. 创建容器对象
-3. 读取xml  注解或者json 加载 BeanDeFinition 对象
+2. 创建Bean 工厂 
+3. 对xml 或注解进行读取或解析，并放入BeanDefinitionMap
 4. 给容器对象进行某些初始化操作
-5. 执行BeanFactoryPostProcessor 的扩展工作
-6. 实例化前的准备工作
-   1. 注册BeanPostProcessor
+5. 执行beanFactoryPostProcessor的扩展工作
+6. 初始化对象前的准备工作
+   1. 注册BeanPostPressor。 只是注册功能
    2. 初始化广播器
-   3. 国际化的相关配置
+   3. 初始化message 源 , 国际化处理
    4. 注册监听器
-7. 对象的实例化操作
-8. 自定义属性赋值
-9. 容器对象属性赋值 populateBean 
-10. 调用BeanPostProcessor 前置处理方法进行扩展
-11. 调用init Method 方法进行初始化方法的调用
-12. 调用BeanPostProcessor 的后置处理方法进行扩展
+7. 对象实例化操作
+   1. 自定义属性
+   2. 容器属性赋值 所有自定义了 Wrapper对象 的属性
+   3. 调用benPostProcessor before 前置处理方法进行扩展
+   4. 调用init- method 进行初始化方法的调用
+   5. 调用 benPostProcessor before 后置方法进行扩展
+8.  销毁
 
 ### spring bean 容器的生命周期
 
@@ -81,6 +84,14 @@ A B 对象相互依赖对方
 
 ### 如何使用三级缓存解决循环依赖
 
+#### 三级缓存分别存储什么类型的对象
+
+	1. 一级缓存 完整对象
+	2. 二级缓存 半成品对象
+	3. 三级缓存  ObjectFactory lamda 表达式
+
+
+
  ![image-20211020105730858](https://gitee.com/Sean0516/image/raw/master/img/image-20211020105730858.png)
 
 ```java
@@ -100,9 +111,9 @@ private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<
 
 不能，因为在整个处理过程中，缓存中放的是初始化完成和未初始化的对象，如果只有一级缓存，那么初始化和未初始化的对象都会放在一级缓存中。有可能在获取过程中获取到未初始化的对象，而未初始化的对象是不能使用的。 不能直接进行相关处理。 因此需要分开来存储 
 
-二级缓存为什么解决不了AOP代理的场景了
+### 如果只有两个缓存能不能解决
 
-
+二级缓存可以解决部分的循环依赖问题，但是如果循环依赖过程中包含了代理对象的创建，那么就必须要使用三级缓存了
 
 ###  为什么使用三级缓存能够解决循环依赖
 
