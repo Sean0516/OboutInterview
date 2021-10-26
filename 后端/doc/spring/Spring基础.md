@@ -4,7 +4,49 @@
 
 
 
+## 基本概念
+
+### spring  的优点
+
+1. ioc  集中管理对象。 对象与对象之间耦合度降低，方便维护对象
+2. aop  在步修改代码的情况下，可以对业务代码进行增强，减少重复
+3. 声明事务的支持  提高开发效率，只需要一个简单注解就可以实现事务管理
+4. 方便集成各种优秀的框架
+
+### BeanFactory 和FactoryBean 有什么区别
+
+BeanFactory 创建对象的时候是一套完整的标准化流程，如果想要创建Bean的对象，必须要严格遵循一定的步骤，否证无法创建对象
+
+而FactoryBean 主要是为了适配创建Bean 的时候，不需要遵循固定的规则，同时想自己定义对象的创建过程。那么久可以使用FactoryBean接口了 ，因为在此接口中定义了三个方法
+
+1. isSingleton 判断当前对象是否为单例
+2. getObjectType 返回当前对象的类型
+3. getObject ，此方法需要自己自定义实现，自己完全的控制Bean 的创建流程。
+
+### 说说 BeanFactory 和 ApplicationContext 的区别？ 什么是延迟实例化，它的优缺点是什么
+
+BeanFactory和ApplicationContext是Spring的两大核心接口，都可以当做Spring的容器。其中ApplicationContext是BeanFactory的子接口
+
+BeanFactory：是Spring里面最底层的接口，包含了各种Bean的定义，读取bean配置文档，管理bean的加载、实例化，控制bean的生命周期，维护bean之间的依赖关系。
+
+ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所具有的功能外，还提供了更完整的框架功能
+
+- 继承MessageSource，因此支持国际化。
+- 统一的资源文件访问方式。
+- 提供在监听器中注册bean的事件。
+- 同时加载多个配置文件。
+- 载入多个（有继承关系）上下文 ，使得每一个上下文都专注于一个特定的层次，比如应用的web层
+- BeanFactroy采用的是延迟加载形式来注入Bean的，即只有在使用到某个Bean时(调用getBean())，才对该Bean进行加载实例化。这样，我们就不能发现一些存在的Spring的配置问题。如果Bean的某一个属性没有注入，BeanFacotry加载后，直至第一次使用调用getBean方法才会抛出异常。
+- ApplicationContext，它是在容器启动时，一次性创建了所有的Bean。这样，在容器启动时，我们就可以发现Spring中存在的配置错误，这样有利于检查所依赖属性是否注入。 ApplicationContext启动后预载入所有的单实例Bean，通过预载入单实例bean ,确保当你需要的时候，你就不用等待，因为它们已经创建好了。
+- 相对于基本的BeanFactory，ApplicationContext 唯一的不足是占用内存空间。当应用程序配置Bean较多时，程序启动较慢。
+- BeanFactory通常以编程的方式被创建，ApplicationContext还能以声明的方式创建，如使用ContextLoader。
+- BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册
+
 ## IOC
+
+### IOC 实现机制是什么
+
+使用工厂模式以及反射来实现的
 
 ### IOC创建对象的过程图 （BeanFactory）
 
@@ -14,7 +56,9 @@
 
 
 
-### IOC 创建![6ca29c4f1cf4656f3c8b5e1b0f5f5a9a](https://gitee.com/Sean0516/image/raw/master/img/6ca29c4f1cf4656f3c8b5e1b0f5f5a9a.png)对象的流程
+### IOC 创建的流程
+
+### ![6ca29c4f1cf4656f3c8b5e1b0f5f5a9a](https://gitee.com/Sean0516/image/raw/master/img/6ca29c4f1cf4656f3c8b5e1b0f5f5a9a.png)
 
 1. 准备工作
 2. 创建Bean 工厂 
@@ -26,37 +70,31 @@
    2. 初始化广播器
    3. 初始化message 源 , 国际化处理
    4. 注册监听器
-7. 对象实例化操作
-   1. 自定义属性
-   2. 容器属性赋值 所有自定义了 Wrapper对象 的属性
-   3. 调用benPostProcessor before 前置处理方法进行扩展
-   4. 调用init- method 进行初始化方法的调用
-   5. 调用 benPostProcessor before 后置方法进行扩展
-8.  销毁
+7. 对象实例化操作 
+   1. 实例化对象  使用createBeanInstance
+   2. 自定义属性   populateBean填充属性
+   3. 执行所有自定义了 Aware对象 的接口方法
+      1. BeanNameAware
+      2. BeanFactoryAware
+      3. ApplicationContextAware
+   4. 调用benPostProcessor before 前置处理方法进行扩展 （preProcessBeforeInitialization()）
+   5. 调用init- method 进行初始化方法的调用
+      1. 实现InitializingBean 接口 ，调用afterPropertiesSet
+      2. 指定init-method 方法 
+   6. 调用 benPostProcessor before 后置方法进行扩展 （postProcessAfterInitialization() ）
+8.  销毁 （ destroy）
 
-### spring bean 容器的生命周期
+### IOC 的扩展点及调用时机
 
-1. Spring 容器根据配置中的 bean 定义中实例化 bean。
+1. BeanDefinitionRegistryPostProcessor  动态注册 BeanDefinition
 
-   对于BeanFactory容器，当客户向容器请求一个尚未初始化的bean时，或初始化bean的时候需要注入另一个尚未初始化的依赖时，容器就会调用createBean进行实例化。对于ApplicationContext容器，当容器启动结束后，通过获取BeanDefinition对象中的信息，实例化所有的bean
+   调用时机 ： IOC 加载时，注册BeanDefinition 的时候会调用
 
-2. Spring 使用依赖注入填充所有属性，如 bean 中所定义的配置。实例化后的对象被封装在BeanWrapper对象中，紧接着，Spring根据BeanDefinition的信息 以及 通过BeanWrapper提供的设置属性的接口完成依赖注入
+2. BeanFactoryPostProcessor  对BeanFactory 进行扩展
 
-3. 如果 bean 实现BeanNameAware 接口，则工厂通过传递 bean 的 ID 来调用setBeanName()。
+3. BeanPostProcessor 
 
-4. 如果 bean 实现 BeanFactoryAware 接口，工厂通过传递自身的实例来调用 setBeanFactory()。
-
-5. 如果存在与 bean 关联的任何BeanPostProcessors，则调用 preProcessBeforeInitialization() 方法。
-
-6. 如果为 bean 指定了 init 方法（ 的 init-method 属性），那么将调用它。
-
-7. 最后，如果存在与 bean 关联的任何 BeanPostProcessors，则将调用 postProcessAfterInitialization() 方法 ，创建代理。
-
-8. 如果 bean 实现DisposableBean 接口，当 spring 容器关闭时，会调用 destory()。
-
-9. 如果为bean 指定了 destroy 方法（ 的 destroy-method 属性），那么将调用它
-
-![image-20210806111818713](https://gitee.com/Sean0516/image/raw/master/img/image-20210806111818713.png)
+4. Aware 接口
 
 ### Aware 接口存在的意义
 
@@ -65,6 +103,146 @@
 
 
 ### refresh方法
+
+```java
+public void refresh() throws BeansException, IllegalStateException {
+   synchronized (this.startupShutdownMonitor) {
+      // Prepare this context for refreshing.
+      /**
+       * 做容器属性前的准备工作
+       * 1. 设置容器的启动时间
+       * 2. 设置活跃状态为true
+       * 3. 设置关闭状态为false
+       * 4. 获取Environment 对象，添加当前系统属性到 Environment 对象中
+       * 5. 准备监听器和事件的集合对象，默认为空的集合
+       */
+      prepareRefresh();
+
+      // Tell the subclass to refresh the internal bean factory.
+      // 创建BeanFactory 加载xml 配置文件的属性值到当前工厂中。 最重要的就是 BeanDefinition
+      ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+      // Prepare the bean factory for use in this context.
+      //  BeanFactory的预准备工作（BeanFactory进行一些设置，比如context的类加载器，BeanPostProcessor和XXXAware自动装配等）
+      prepareBeanFactory(beanFactory);
+
+      try {
+         // Allows post-processing of the bean factory in context subclasses.
+         //BeanFactory准备工作完成后进行的后置处理工作
+         postProcessBeanFactory(beanFactory);
+
+         // Invoke factory processors registered as beans in the context.
+         // 执行BeanFactoryPostProcessor的方法
+         invokeBeanFactoryPostProcessors(beanFactory);
+
+         // Register bean processors that intercept bean creation.
+         // 注册BeanPostProcessor Bean 的前置后置处理器
+         registerBeanPostProcessors(beanFactory);
+
+         // Initialize message source for this context.
+         // 初始化国际化消息
+         initMessageSource();
+
+         // Initialize event multicaster for this context.
+         // 初始化事件处理器
+         initApplicationEventMulticaster();
+
+         // Initialize other special beans in specific context subclasses.
+         // 子类重写这个方法，在容器刷新的时候可以自定义逻辑；如创建Tomcat，Jetty等WEB服务器
+         onRefresh();
+
+         // Check for listener beans and register them.
+         // 注册应用的监听器 就是注册实现了ApplicationListener接口的监听器bean，这些监听器是注册到ApplicationEventMulticaster中的
+         registerListeners();
+
+         // Instantiate all remaining (non-lazy-init) singletons.
+         //初始化所有剩下的非懒加载的单例bean
+         finishBeanFactoryInitialization(beanFactory);
+
+         // Last step: publish corresponding event.
+         // 完成context的刷新。主要是调用LifecycleProcessor的onRefresh()方法，并且发布事件（ContextRefreshedEvent）
+         finishRefresh();
+      }
+
+      catch (BeansException ex) {
+         if (logger.isWarnEnabled()) {
+            logger.warn("Exception encountered during context initialization - " +
+                  "cancelling refresh attempt: " + ex);
+         }
+
+         // Destroy already created singletons to avoid dangling resources.
+         destroyBeans();
+
+         // Reset 'active' flag.
+         cancelRefresh(ex);
+
+         // Propagate exception to caller.
+         throw ex;
+      }
+
+      finally {
+         // Reset common introspection caches in Spring's core, since we
+         // might not ever need metadata for singleton beans anymore...
+         resetCommonCaches();
+      }
+   }
+}
+```
+
+### spring 标签解析流程
+
+1. 加载spring.handlers 配置文件
+2. 将配置文件内容加载到map 集合中
+3. 根据指定的key 去获取对应的处理器
+
+### 自定义标签
+
+1. 创建一个对应的解析器处理类 （在init方法中添加parser 类）
+   1. 继承NameSpaceHandlerSupport
+   2. 重写 init 方法 （注册 parser 类 和标签节点）
+2. 创建一个普通的Spring.handlers 配置文件，让应用程序能够完成加载工作
+   1. Spring.handlers  设置处理器路径
+   2. Spring.schemas   指定 xsd 文件路径
+   3. 创建 xsd 文件，并设置规则
+3. 创建对应标签的parser 类 （对当前标签的其他属性值进行解析工作）
+   1. extends  AbstractSingleBeanDefinitionParser
+   2. 重写 gerBeanClass
+   3. 重写doParse
+
+
+
+### 哪些是重要的 bean 生命周期方法？
+
+有两个重要的 bean 生命周期方法，第一个是 setup ， 它是在容器加载 bean的时候被调用。第二个方法是 teardown 它是在容器卸载类的时候被调用。The bean 标签有两个重要的属性（init-method 和 destroy-method）。用它们你可以自己定制初始化和注销方法。它们也有相应的注解（@PostConstruct 和@PreDestroy）
+
+### 配置Bean 有那几种方法
+
+1. xml
+2. 注解  （@Component @Controller    前提  需要配置扫描包  component-scan  反射调用构造方法
+3. java config @Bean  可以自己控制实例化的过程
+4. @Import  有三种方式
+   1. 
+
+### 什么是Bean 装配，什么是Bean 的自动装配
+
+​	
+
+### 自动装配有哪几种
+
+1. no 不进行自动装配  通过 @Autowired 来进行手动自定需要自动注入的属性
+2. byName 通过bean 的名称进行自动装配，如果一个bean 的property 和另一个 bean 的name 相同，就进行自动装配
+3. byType 通过参数的数据类型进行自动装配
+4. constructor  利用构造函数进行装配 ，并且构造函数的参数通过byType 进行装配
+5. auto detect  自动探测。 如果有构造方法，通过construct 的方式自动装配，否则使用byType 的方式自动装配 （已经弃用了）
+
+
+
+### BeanDefinition 的加载流程
+
+1. 读取配置  BeanDefinitionReader
+2. 解析注解。 
+3. 扫描 
+4. 注册BeanDefinition  到 Map 中
 
 ## 循环依赖
 
@@ -84,7 +262,7 @@ A B 对象相互依赖对方
 
 ### 如何使用三级缓存解决循环依赖
 
-#### 三级缓存分别存储什么类型的对象
+### 三级缓存分别存储什么类型的对象
 
 	1. 一级缓存 完整对象
 	2. 二级缓存 半成品对象
@@ -161,7 +339,7 @@ Spring 中的 IoC 的实现原理就是工厂模式加反射机制
 spring 本身并没有针对Bean 做线程安全处理 所以
 
 1. 如果Bean 是无状态的，那么Bean 是线程安全的
-2. 如果Bean 是有状态的，则不是线程安全的
+2. 如果Bean 是有状态的 ,包含属性，则不是线程安全的
 
 
 
@@ -179,15 +357,6 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 仅当用户使用支持 Web 的 Application Context 时，最后三个才可用
 
-### spring 容器启动流程是怎么样的
-
-1. 首先会进行扫描，扫描得到所有的BeanDefinition对象，并存放在一个Map 中
-2. 然后筛选出非懒加载的单例BeanDefinition 进行创建bean ，对于多例bean不需要再启动过程中进行创建，对于多利bean 会在每次获取 bean 时利用beanDefinition去创建
-3. 利用BeanDefinition 创建 Bean
-4. 单例Bean 创建完之后，spring 会发布一个容器启动事件
-
-
-
 ### @Autowired 注解有什么用
 
 @Autowired 可以更准确地控制应该在何处以及如何进行自动装配。此注解用于在 setter 方法，构造函数，具有任意名称或多个参数的属性或方法上自动装配bean。默认情况下，它是类型驱动的注入
@@ -202,6 +371,8 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 类级别：映射请求的 URL 
 
 方法级别：映射 URL 以及 HTTP 请求方法
+
+## AOP
 
 ### Spring AOP里面的几个名词
 
@@ -221,7 +392,17 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 4. After (finally) - 这些类型的 Advice 在连接点方法之后执行，无论方法退出是正常还是异常返回，并使用 @After 注解标记进行配置。
 5. Around - 这些类型的 Advice 在连接点之前和之后执行，并使用@Around 注解标记进行配置
 
+### AOP 面向切面编程
 
+#### 1.动态代理 如果要实现AOP ，一定要使用动态代理
+
+1. jdk
+2. cjlib
+3. 
+
+### 自己通过aop 的方式来实现某个统一的功能，我们应该怎么做。 （声明式事务）
+
+​	进行通知类型进行扩展  。 
 
 ## MVC
 
@@ -284,9 +465,7 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 
 
-### 哪些是重要的 bean 生命周期方法？
 
-有两个重要的 bean 生命周期方法，第一个是 setup ， 它是在容器加载 bean的时候被调用。第二个方法是 teardown 它是在容器卸载类的时候被调用。The bean 标签有两个重要的属性（init-method 和 destroy-method）。用它们你可以自己定制初始化和注销方法。它们也有相应的注解（@PostConstruct 和@PreDestroy）
 
 ### spring 中的事件
 
@@ -361,33 +540,9 @@ Spring事务管理主要包括3个接口，Spring事务主要由以下三个共�
 2. TransacitonDefinition：事务定义信息，用来定义事务相关属性，给事务管理器PlatformTransactionManager使用这个接口有下面四个主要方法：①、getIsolationLevel：获取隔离级别。②、getPropagationBehavior：获取传播行为。③、getTimeout获取超时时间。④、isReadOnly：是否只读（保存、更新、删除时属性变为false--可读写，查询时为true--只读）事务管理器能够根据这个返回值进行优化，这些事务的配置信息，都可以通过配置文件进行配置
 3. TransationStatus：事务具体运行状态，事务管理过程中，每个时间点事务的状态信息。例如：①、hasSavepoint()：返回这个事务内部是否包含一个保存点。②、isCompleted()：返回该事务是否已完成，也就是说，是否已经提交或回滚。③、isNewTransaction()：判断当前事务是否是一个新事务
 
-### 说说 BeanFactory 和 ApplicationContext 的区别？ 什么是延迟实例化，它的优缺点是什么
-
-BeanFactory和ApplicationContext是Spring的两大核心接口，都可以当做Spring的容器。其中ApplicationContext是BeanFactory的子接口
-
-
-
-BeanFactory：是Spring里面最底层的接口，包含了各种Bean的定义，读取bean配置文档，管理bean的加载、实例化，控制bean的生命周期，维护bean之间的依赖关系。
-
-ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所具有的功能外，还提供了更完整的框架功能
-
-- 继承MessageSource，因此支持国际化。
-- 统一的资源文件访问方式。
-- 提供在监听器中注册bean的事件。
-- 同时加载多个配置文件。
-- 载入多个（有继承关系）上下文 ，使得每一个上下文都专注于一个特定的层次，比如应用的web层
-- BeanFactroy采用的是延迟加载形式来注入Bean的，即只有在使用到某个Bean时(调用getBean())，才对该Bean进行加载实例化。这样，我们就不能发现一些存在的Spring的配置问题。如果Bean的某一个属性没有注入，BeanFacotry加载后，直至第一次使用调用getBean方法才会抛出异常。
-- ApplicationContext，它是在容器启动时，一次性创建了所有的Bean。这样，在容器启动时，我们就可以发现Spring中存在的配置错误，这样有利于检查所依赖属性是否注入。 ApplicationContext启动后预载入所有的单实例Bean，通过预载入单实例bean ,确保当你需要的时候，你就不用等待，因为它们已经创建好了。
-- 相对于基本的BeanFactory，ApplicationContext 唯一的不足是占用内存空间。当应用程序配置Bean较多时，程序启动较慢。
-- BeanFactory通常以编程的方式被创建，ApplicationContext还能以声明的方式创建，如使用ContextLoader。
-- BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册
-
 ### Java中依赖注入有哪些方式
 
 1. 构造器注入
 2. Setter方法注入
 3. 接口注入
 
-### Spring Aplication run 方法
-
-### Spring  start  自定义开发
