@@ -244,6 +244,47 @@ public void refresh() throws BeansException, IllegalStateException {
 3. 扫描 
 4. 注册BeanDefinition  到 Map 中
 
+### Bean 的创建顺序是什么样的
+
+Bean 的创建顺序是由BeanDefinition 的注册顺序来决定的，当然依赖关系也会影响Bean 的创建顺序
+
+### BeanDefinition 的注册顺序由什么来决定
+
+主要由注解的解析顺序来决定
+
+1. @Configuration
+2. @Component
+3. @Import --类
+4. @Bean
+5. @Import --  实现了ImportBeanDefinitionRegister  的类
+
+### java config  是如何替换 spring xml 的
+
+#### 应用：
+
+1. 以前xml 
+   1. spring  容器 ClassPathXmlApplicationContext (".xml")
+   2. Spring.xml
+   3. <bean />
+   4. 扫描包   <component-sacn>
+   5. 引入外部属性配置文件  <property-placeHodeler >
+   6. 指定其他配置文件
+2. java  config 
+   1. spring 容器  AnnotationConfigApplicationContext(javaConfig.class)
+   2. 配置类  @Configration
+   3. @Bean  
+   4. 扫描包  @ComponentScan
+   5. 引入外部属性配置文件@PropertySource()
+   6. @Import 
+
+### 源码
+
+ ![image-20211026202657617](https://gitee.com/Sean0516/image/raw/master/img/image-20211026202657617.png)
+
+
+
+
+
 ## 循环依赖
 
 ### 什么是循环依赖
@@ -356,6 +397,18 @@ Session - 每一次 HTTP 请求都会产生一个新的 bean，同时该 bean �
 Global-session -  全局作用域，global-session和Portlet应用相关。当你的应用部署在Portlet容器中工作时，它包含很多portlet。如果你想要声明让所有的portlet共用全局的存储变量的话，那么这全局变量需要存储在global-session中。全局作用域与Servlet中的session作用域效果相同
 
 仅当用户使用支持 Web 的 Application Context 时，最后三个才可用
+
+
+
+## 注解
+
+### @Component @Controller  @Repository @Service 有什么区别
+
+实际无区别，主要是用于代码分层 ，让代码更清晰
+
+### @Import 注解可以有几种用法
+
+1. 直接指定类 （如果是配置类，会按照配置类正常解析，如果是普通类，则会解析为普通Bean ）
 
 ### @Autowired 注解有什么用
 
