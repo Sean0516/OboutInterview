@@ -15,9 +15,11 @@
 
 ### BeanFactory 和FactoryBean 有什么区别
 
+都是用来创建Bean 对象的
+
 BeanFactory 创建对象的时候是一套完整的标准化流程，如果想要创建Bean的对象，必须要严格遵循一定的步骤，否证无法创建对象
 
-而FactoryBean 主要是为了适配创建Bean 的时候，不需要遵循固定的规则，同时想自己定义对象的创建过程。那么久可以使用FactoryBean接口了 ，因为在此接口中定义了三个方法
+而FactoryBean 主要是为了适配创建Bean 的时候，不需要遵循固定的规则，同时想自己定义对象的创建过程。那么就可以使用FactoryBean接口了 ，因为在此接口中定义了三个方法
 
 1. isSingleton 判断当前对象是否为单例
 2. getObjectType 返回当前对象的类型
@@ -42,11 +44,72 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 - BeanFactory通常以编程的方式被创建，ApplicationContext还能以声明的方式创建，如使用ContextLoader。
 - BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册
 
+### ｓｐｒｉｎｇ　中用到的设计模式
+
+单例模式　：　bean 默认都是单例的
+
+原型模式：　指定作用域　prototype
+
+工程模式　　beanfactory
+
+模板方法　　
+
+策略模式　　ｘｍｌＢｅａｎＤｅｆｉｎｉｔｉｏｎＲｅａｄｅｒ
+
+观察者模式　　ｌｉｓｔｅｎｅｒ　　ｅｖｅｎｔ
+
+适配器模式　　　adapter
+
+责任链模式　　使用ａｏｐ　的时候，会先生成一个拦截器
+
+代理模式　　动态代理
+
 ## IOC
 
-### IOC 实现机制是什么
+### IOC 的理解，原理和实现
 
-使用工厂模式以及反射来实现的
+#### 总
+
+控制反转： 理论思想，原理的对象由使用者控制，有了spring 之后，可以把整个对象交给spring容器来帮我们进行管理
+
+​	DI 依赖注入  把对于的属性的值注入到具体的对象中，@Autowired  完成装载
+
+容器：  存储对象 ，使用Map 结构来存储。 一般存在三级缓存中，其中singletonObjects 存放完整的对象 
+
+​		整个bean 的生命周期，从创建到使用到销毁的过程全部是由容器来管理（bean 的生命周期）
+
+#### 分
+
+1. 一般聊ioc 容器要涉及到容器的创建过程 （BeanFactory DefaultListableBeanFactory）x向Bean 工程中设置一些参数 。 BeanPostProcessor Aware 接口的子类
+2. 加载解析bean 对象。 准备要创建的bean 对象的的BeanDefinition （xml 或者注解的解析过程）
+3. BeanFactoyPostProcessor  的处理 
+4. BeanPostProcessor 的注册  ，方便后续对Bean 对象完成具体的扩展功能
+5. 通过反射等方式，将BeanDefinition 对象实例化为具体的对象
+6. Bean 对象的初始化过程 （填充属性，调用 aware 子类的方法， 调用 beanPostProcesser 前置方法 -- 执行 init-method 方法 ，执行 后置方法）
+7. 生成完整的bean 对象，通过gentBean 可以直接获取
+8. 销毁过程
+
+​	
+
+使用工厂模式以及反射来实现的 。同时包含很多的扩展点， 最常使用的对 BeanFactory 的扩展，对Bean 的扩展 （对占位符的处理）
+
+以上是我对ioc 的理解 ，您有什么想问的？
+
+### IOC 的底层实现
+
+ 底层原理 ，过程，数据结构，流程 ，设计模式。设计实现
+
+反射， 工厂模式  设计模式 ，关键的方法
+
+1. 通过createBeanFactory 创建出一个Bean 工厂
+2. 开始循环创建对象
+3. 通过createBean doCreateBean 方法。 以反射的方法来创建对象
+4. 进行对象的属性天长  populateBean
+5. 进行其他的初始化操作
+
+
+
+
 
 ### IOC创建对象的过程图 （BeanFactory）
 
@@ -71,9 +134,9 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
    3. 初始化message 源 , 国际化处理
    4. 注册监听器
 7. 对象实例化操作 
-   1. 实例化对象  使用createBeanInstance
-   2. 自定义属性   populateBean填充属性
-   3. 执行所有自定义了 Aware对象 的接口方法
+   1. 实例化对象  使用createBeanInstance 方法 ，通过反射的方式生成对象
+   2. 自定义属性   populateBean填充属性  
+   3. 调用所有自定义了 Aware对象 的接口方法
       1. BeanNameAware
       2. BeanFactoryAware
       3. ApplicationContextAware
@@ -83,6 +146,24 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
       2. 指定init-method 方法 
    6. 调用 benPostProcessor before 后置方法进行扩展 （postProcessAfterInitialization() ）
 8.  销毁 （ destroy）
+
+### Bean 的生命周期
+
+1. 实例化对象  使用createBeanInstance 方法 ，通过反射的方式生成对象
+2. 自定义属性   populateBean填充属性  
+3. 调用所有自定义了 Aware对象 的接口方法
+   1. BeanNameAware
+   2. BeanFactoryAware
+   3. ApplicationContextAware
+4. 调用benPostProcessor before 前置处理方法进行扩展 （preProcessBeforeInitialization()）
+5. 调用init- method 进行初始化方法的调用
+   1. 实现InitializingBean 接口 ，调用afterPropertiesSet
+   2. 指定init-method 方法 
+6. 调用 benPostProcessor before 后置方法进行扩展 （postProcessAfterInitialization() ） spring  的aop就是在这里实现的。 AbstractAutoProxyCreator
+7. 获取到完整的对象，可以通过getBean 的方式来进行对象的获取
+8. 销毁流程 
+   1. 判断是否实现了DispoableBean 接口 
+   2. 调用destroyMethod 方法
 
 ### IOC 的扩展点及调用时机
 
@@ -295,6 +376,24 @@ A B 对象相互依赖对方
 
 ### 如何解决循环依赖问题
 
+三级缓存 ， 提前暴露对象  aop
+
+#### 总：
+
+A依赖B B依赖A
+
+#### 分
+
+​	bean 的创建过程  ： 实例化和初始化
+
+ 	1. 先创建A 对象，实例化A 对象，此时A对象中的B
+
+
+
+
+
+#### 初始化和实例化 
+
 ![image-20211020110251764](https://gitee.com/Sean0516/image/raw/master/img/image-20211020110251764.png)
 
 ​	使用三级缓存解决（实例化和初始化分开处理，在中间过程中，给其他对象赋值的时候，并不是一个完整对象，而是把半成品对象赋值给其他对象。 提前暴露对象）  ，  set 方式可以解决循环依赖（set 先创建对象，再进行赋值） ，而构造方法是没有办法解决循环依赖问题的
@@ -336,9 +435,17 @@ private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<
 
 ###  为什么使用三级缓存能够解决循环依赖
 
+三级缓存的value 类型是一个ObjectFactory  ，是一个函数接口，存在的意义是保证在整个容器的运行过程中同名的Bean 对象只能有一个
 
+### 如果一个对象需要被代理，或者说需要生成代理对象， 那么要不要先生成一个普通对象
 
+​	需要。 因为aop 代理需要在 实例化之后再执行。 因此需要先提前创建一个普通对象。 
 
+​	普通对象和代理对象是不能同时出现再容器中的， 因此，当一个对象需要被代理的时候，需要使用代理对象来覆盖之前的普通对象。 在实际的调用过程中，是没有办法确定什么时候对象被使用，所以就要求当某个对象被调用的时候，优先判断此对象是否需要被代理，类似一种回调机制，因此，传入lambda 表达时，可以通过表达式进行对象覆盖。
+
+因此， 所有的Bean 对象在创建的时候都要优先放到三级缓存中，在后续的使用过程中，如果需要被代理则返回代理对象，不需要被代理，则返回普通对象
+
+ 
 
 ### 什么是Spring IOC 容器
 
@@ -366,12 +473,6 @@ ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它
 | 使用语法显式提高资源对象 | 自己创建和管理资源对象 |
 | 不支持国际化             | 支持国际化             |
 | 不支持基于依赖的注解     | 支持基于依赖的注解     |
-
-
-
-### Spring IoC 的实现机制
-
-Spring 中的 IoC 的实现原理就是工厂模式加反射机制
 
 
 
@@ -447,11 +548,25 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 ### AOP 面向切面编程
 
-#### 1.动态代理 如果要实现AOP ，一定要使用动态代理
+ａｏｐ　是ｉｏｃ　的一个扩展功能，现有IOC　，再有ａｏｐ　，只是ｉｏｃ　整个流程中的一个扩展点。　　ｂｅａｎｐｏｓｔＰｒｏｃｅｓｓｏｒ
 
-1. jdk
-2. cjlib
-3. 
+总：	ａｏｐ　概念，动态代理
+
+分：　ａｏｐ　　本身是一个扩展功能，在BｅａｎＰｏｓｔＰｒｏｃｅｓｓｏｒ　的后置处理方法中来进行实现
+
+
+
+
+
+1.  代理对象的创建过程（ａｄｖｉｃｅ　　切面，切点）
+2. 通过ｊｄｋ　或者ｃｇｌｉｂ　的方式来生成代理对象
+3. 在执行方法调用时，会调用到生成的字节码文件中，直接返回DｙｎａｍｉｃＡｄｖｉｓｏｒｅｄＩｎｔｅｒｃｅｐｔｏｒ　类的ｉｎｔｅｒｃｅｐｔ　方法，从此方法开始执行
+4. 根据之前定义好的通知来生成拦截器链
+5. 从拦截器中一次获取每一个通知开始进行执行，在执行过程中，为了方便找到下一个通知是那个，会有一个CｇｌｉＭｅｔｈｏｄＩｎｖｏｃａｔｉｏｎ　对象，找的时候从-1的位置依次开始查找并执行
+
+
+
+
 
 ### 自己通过aop 的方式来实现某个统一的功能，我们应该怎么做。 （声明式事务）
 
@@ -548,14 +663,29 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 ### Spring 中的事务是如何实现的
 
-1. spring  事务底层是基于数据库事务和AOP机制
+#### 	总：
+
+​	spring  事务底层是基于数据库事务和AOP机制，首先要生成具体的代理对象，然后按照ａｏｐ　的整套流程来执行具体的操作逻辑，正常情况下要通过通知来完成核心功能，但是事务不是通过通知来实现，而是通过一个transactioninterceptor　来实现的。　然后调用invoke　来实现具体的逻辑
+
+#### 分
+
+1. 先做准备工作，解析各个方法上事务相关的属性，根据具体的属性来判断是否开启新的事务
+2. 当需要开启时，获取数据库连接。　关闭自动提交，开启事务
+3. 执行具体的ｓｑｌ　逻辑操作
+4. 在操作过程中，如果执行失败了，则完成事务回滚操作
+5. 如果没有发生意外，则进行事务提交
+6. 当事务执行完毕后，需要清除相关的事务对象
+
+### Spring 中的事务是如何实现的
+
+1. 
 2. 首先对使用@Transactional 注解的Bean ,spring 会创建一个代理对象作为Bean
 3. 当调用代理对象的方法时，会先判断该方法是否加上了@Transactional 注解
 4. 如果加了，则利用事务管理器创建一个数据库连接
 5. 并且修改数据库连接的auto commit属性 为false ，禁止此连接的自动提交。
 6. 然后执行当前方法，方法中会执行sql
 7. 执行完当前方法后，如果没有出现异常，则直接提交事务，。
-8. 如果出现事务，并且这个异常是需要会管的，就会提交事务，否则任然提交事务
+8. 如果出现事务，并且这个异常是需要回滚的，就会提交事务，否则任然提交事务
 
 
 
@@ -567,7 +697,7 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 
 ### spring的事务传播行为
 
-spring事务的传播行为说的是，当多个事务同时存在的时候，spring如何处理这些事务的行为
+spring事务的传播行为说的是，当多个事务同时存在的时候，spring如何处理这些事务的行为　，spring　有其中事务传播行为
 
 1. PROPAGATION_REQUIRED：如果当前没有事务，就创建一个新事务，如果当前存在事务，就加入该事务，该设置是最常用的设置
 2. PROPAGATION_SUPPORTS：支持当前事务，如果当前存在事务，就加入该事务，如果当前不存在事务，就以非事务执行
@@ -593,9 +723,5 @@ Spring事务管理主要包括3个接口，Spring事务主要由以下三个共�
 2. TransacitonDefinition：事务定义信息，用来定义事务相关属性，给事务管理器PlatformTransactionManager使用这个接口有下面四个主要方法：①、getIsolationLevel：获取隔离级别。②、getPropagationBehavior：获取传播行为。③、getTimeout获取超时时间。④、isReadOnly：是否只读（保存、更新、删除时属性变为false--可读写，查询时为true--只读）事务管理器能够根据这个返回值进行优化，这些事务的配置信息，都可以通过配置文件进行配置
 3. TransationStatus：事务具体运行状态，事务管理过程中，每个时间点事务的状态信息。例如：①、hasSavepoint()：返回这个事务内部是否包含一个保存点。②、isCompleted()：返回该事务是否已完成，也就是说，是否已经提交或回滚。③、isNewTransaction()：判断当前事务是否是一个新事务
 
-### Java中依赖注入有哪些方式
 
-1. 构造器注入
-2. Setter方法注入
-3. 接口注入
 
