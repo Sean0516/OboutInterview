@@ -44,7 +44,7 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 - BeanFactory通常以编程的方式被创建，ApplicationContext还能以声明的方式创建，如使用ContextLoader。
 - BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册
 
-### ｓｐｒｉｎｇ　中用到的设计模式
+### Spring　中用到的设计模式
 
 单例模式　：　bean 默认都是单例的
 
@@ -364,6 +364,10 @@ Bean 的创建顺序是由BeanDefinition 的注册顺序来决定的，当然依
 
 
 
+### 如何在自动注入没有找到 依赖Bean 的时候不报错
+
+将 required 设置为false
+
 
 
 ## 循环依赖
@@ -510,10 +514,33 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 ### @Import 注解可以有几种用法
 
 1. 直接指定类 （如果是配置类，会按照配置类正常解析，如果是普通类，则会解析为普通Bean ）
+2. 实现了 ImportSelector 的类 ，通过数组的方式，返回一个完整的类路径 ，可以一次性注册多个
+3. 通过实现ImportBeanDefinitionRegistrar 来注册bean ，一次性可以注册多个。 可以通过BeanDefinitionRegistry 来动态的注册BeanDefinition
+4. 
 
 ### @Autowired 注解有什么用
 
 @Autowired 可以更准确地控制应该在何处以及如何进行自动装配。此注解用于在 setter 方法，构造函数，具有任意名称或多个参数的属性或方法上自动装配bean。默认情况下，它是类型驱动的注入
+
+### @Autowired 和 @Resource 的区别
+
+都可以自动注入 
+
+1. Autowired  由spring 提供。Resource 由jdk 提供
+2. Autowired   根据类型去注入 ，而 Resource 根据name 注入，当 name 找不到，才会使用类型去查找
+
+### @Autowired 自动装配的过程是什么样的
+
+Autowired  通过bean 的后置处理器进行解析的。 
+
+1. 在创建一个spring 容器的时候，在构造函数中进行注册AutowiredAnnotationBeanPostProcessor
+2. 在Bean 的创建过程中进行解析
+   1. 在实例化后预解析
+   2. 在属性注入真正解析（拿到上一步缓存的元数据，从ioc 容器中进行查找，并且返回） 
+
+
+
+![image-20211028195054453](https://gitee.com/Sean0516/image/raw/master/img/image-20211028195054453.png)
 
 ### @Qualifier 注解有什么用
 
@@ -525,6 +552,22 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 类级别：映射请求的 URL 
 
 方法级别：映射 URL 以及 HTTP 请求方法
+
+### @Configuration 注解的作用及解析原理
+
+1. 加的注解会为配置类创建cglib 动态代理（保证配置类Bean 方法调用Bean 的单例）@Bean 方法的调用就会通过容器getBean 进行获取
+
+### 如何将第三方类配置为Bean
+
+1. @Bean 注解 
+2. 通过@Import 注解导入  这种方法，无法控制实例化过程
+3. 通过重写 BeanDefinitionRegistryPostProcessor 来进行注册
+
+### 为什么@ComponentScan 不设置basePackage 也会扫描
+
+因为 spring 在解析 CompinentScan的时候拿到 basepackage ，如果没拿到，会将类所在的包的地址，作为扫描包的地址
+
+
 
 ## AOP
 
@@ -565,6 +608,23 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 5. 从拦截器中一次获取每一个通知开始进行执行，在执行过程中，为了方便找到下一个通知是那个，会有一个CｇｌｉＭｅｔｈｏｄＩｎｖｏｃａｔｉｏｎ　对象，找的时候从-1的位置依次开始查找并执行
 
 
+
+### JDK 动态代理和CGLIB 动态代理的区别
+
+1. JDK 动态代理只支持接口的代理，不支持类的代理
+2. JDK 在运行时为目标生成了一个动态代理类
+3. 该代理类是实现目标类接口，并且代理类会实现接口中的所有方法，进行增强
+4. 调用时，会通过代理类先去调用处理类进行增强，在通过反射的方法进行调用目标方法。 
+
+如果代理类没有实现接口，会使用CGLIB 来动态代理目标类
+
+1. CGLIB 的底层通过ASM 在运行时，动态的生成目标类的一个子类。 
+2. 并且会重写父类所有的方法增强
+3. 调用时先通过代理类进行增强，再直接调用父类对象的方法进行调用目标方法，从而实现AOP
+
+
+
+### 什么情况下AOP 会失效，怎么解决
 
 
 
