@@ -64,6 +64,26 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 
 代理模式　　动态代理
 
+
+
+### Spring框架中都用到了哪些设计模式
+
+1. 工厂模式：BeanFactory就是简单工厂模式的体现，用来创建对象的实例；
+2. 单例模式：Bean默认为单例模式。
+3. 代理模式：Spring的AOP功能用到了JDK的动态代理和CGLIB字节码生成技术；
+4. 模板方法：用来解决代码重复的问题。比如. RestTemplate, JmsTemplate, JpaTemplate。
+5. 观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener
+6. 适配器模式 advisorAdapter 接口
+7. 责任链模式  BeanPostProcessor
+
+### spring 中的事件
+
+1. 上下文更新事件（ContextRefreshedEvent）：该事件会在 ApplicationContext 被初始化或者更新时发布。也可以在调用 ConfigurableApplicationContext 接口中的 refresh()方法时被触发
+2. 上下文开始事件（ContextStartedEvent）：当容器调用 ConfigurableApplicationContext 的Start()方法开始/重新开始容器时触发该事件
+3. 上下文停止事件（ContextStoppedEvent）：当容器调用 ConfigurableApplicationContext 的Stop()方法停止容器时触发该事件
+4. 上下文关闭事件（ContextClosedEvent）：当 ApplicationContext 被关闭时触发该事件。容器被关闭时，其管理的所有单例 Bean 都被销毁
+5. 请求处理事件（RequestHandledEvent）：在 Web 应用中，当一个 http 请求（request）结束触发该事件。
+
 ## IOC
 
 ### IOC 的理解，原理和实现
@@ -529,6 +549,28 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 1. Autowired  由spring 提供。Resource 由jdk 提供
 2. Autowired   根据类型去注入 ，而 Resource 根据name 注入，当 name 找不到，才会使用类型去查找
 
+### Spring中Autowired和Resource关键字的区别
+
+@Resource和@Autowired都是做bean的注入时使用，其实@Resource并不是Spring的注解，它的包是javax.annotation.Resource，需要导入，但是Spring支持该注解的注入。
+
+##### 共同点
+
+两者都可以写在字段和setter方法上。两者如果都写在字段上，那么就不需要再写setter方法
+
+##### 不同点
+
+1. @Autowired为Spring提供的注解，需要导入包org.springframework.beans.factory.annotation.Autowired;只按照byType注入
+2. @Autowired注解是按照类型（byType）装配依赖对象，默认情况下它要求依赖对象必须存在，如果允许null值，可以设置它的required属性为false。如果我们想使用按照名称（byName）来装配，可以结合@Qualifier注解一起使用
+3. @Resource默认按照ByName自动注入，由J2EE提供，需要导入包javax.annotation.Resource。@Resource有两个重要的属性：name和type，而Spring将@Resource注解的name属性解析为bean的名字，而type属性则解析为bean的类型。所以，如果使用name属性，则使用byName的自动注入策略，而使用type属性时则使用byType自动注入策略。如果既不制定name也不制定type属性，这时将通过反射机制使用byName自动注入策略
+4. @Resource装配顺序：
+   如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到则抛出异
+   常。
+   如果指定了name，则从上下文中查找名称（id）匹配的bean进行装配，找不到则抛出异常。
+   如果指定了type，则从上下文中找到类似匹配的唯一bean进行装配，找不到或是找到多个，都会抛出异常
+   如果既没有指定name，又没有指定type，则自动按照byName方式进行装配；如果没有匹配，则回退为一个原始类型进行匹配，如果匹
+   配则自动装配。@Resource的作用相当于@Autowired，只不过@Autowired按照byType自动注入
+5. 
+
 ### @Autowired 自动装配的过程是什么样的
 
 Autowired  通过bean 的后置处理器进行解析的。 
@@ -624,13 +666,31 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 
 
-### 什么情况下AOP 会失效，怎么解决
+### AOP内部调用失效的原因，怎么解决
 
-
+1. 内部调用不会触发内部方法的AOP ，必须走代理
+2. 重新拿到代理对象再次执行方法，才能进行增强
+   1. 在本类中自动注入当前的bean
+   2. 设置暴露当前代理对象到本地线程，可以通过AopContext.currentProxy（） 拿到当前正在调用的动态代理对象
 
 ### 自己通过aop 的方式来实现某个统一的功能，我们应该怎么做。 （声明式事务）
 
 ​	进行通知类型进行扩展  。 
+
+### Spring AOP 是在哪里创建的动态代理 
+
+1. 正常会在Bean  生命周期初始化后，有BeanPostProcessor 的后置处理器来创建aop
+2. 还有一种特殊情况  ： 在bean 属性注入时，存在循环依赖的情况，也会为循环依赖的Bean 通过 MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition 创建aop 
+
+### AOP 的完整实现流程
+
+1. **解析切面** ： 在Bean 创建之前的第一个Bean 后置处理器会去解析切面  （解析切面中的通知 ，切点 ，一个通知就会解析成一个advisor （通知，切点））
+2. **创建动态代理**， 正常Bean  会在初始化后，调用BeanPostProcessor 拿到之前缓存的advisor  ，再通过advisor中pointcut 判断当前Bean 是否被切点表达式命中，如果匹配，就会为bean 创建动态代理（jdk 动态代理 ，cglib ）
+3. **调用**  拿到动态代理对象，调用方法就会判断当前方法是否增强方法，就会通过调用链的方式一次执行通知
+
+
+
+
 
 ## MVC
 
@@ -638,70 +698,50 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 ### Spring MVC 组件
 
-1. DispatcherServlet：作为前端控制器，整个流程控制的中心，控制其它组件执行，统一调度，降低组件之间的耦合性，提高每个组件的扩展
-2. HandlerMapping：通过扩展处理器映射器实现不同的映射方式，例如：配置文件方式，实现接口方式，注解方式等。
-3. HandlAdapter：通过扩展处理器适配器，支持更多类型的处理器。
-4. ViewResolver：通过扩展视图解析器，支持更多类型的视图解析，例如：jsp、freemarker、pdf、excel等
+1. DispatcherServlet：（前端控制器） 由框架提供，作用： 接收请求，进行请求分发，处理响应结果
+2. HandlerMapping：(处理器映射器) 根据请求URL 找到对应的Handler 
+3. HandlAdapter：处理器适配器   调用处理器（Handler| Controller ）的方法
+4. Handler  后端处理器   接收用户请求数据，调用业务方法处理请求
+5. ViewResolver： 试图解析器  把逻辑视图解析为真正的物理视图   （支持多种视图技术  ）
 
 ### DispatcherServlet 的工作流程
 
 ![image-20210630153343101](C:\Users\Sean\AppData\Roaming\Typora\typora-user-images\image-20210630153343101.png)
 
+![image-20211029154054847](https://gitee.com/Sean0516/image/raw/master/img/image-20211029154054847.png)
+
 1. 向服务器发送 HTTP 请求，请求被前端控制器 DispatcherServlet 捕获。
-2. DispatcherServlet 根据 -servlet.xml 中的配置对请求的 URL 进行解析，得到请求资源标识符（URI）。然后根据该 URI，调用HandlerMapping获得该 Handler 配置的所有相关的对象（包括 Handler 对象以及 Handler 对象对应的拦截器），最后以 HandlerExecutionChain 对象的形式返回。
+
+2. DispatcherServlet  调用HandlerMapping获得该 Handler 配置的所有相关的对象（包括 Handler 对象以及 Handler 对象对应的拦截器），最后以 HandlerExecutionChain （处理器执行链）形式返回 
+
 3. DispatcherServlet 根据获得的 Handler，选择一个合适的HandlerAdapter。（附注：如果成功获得 HandlerAdapter 后，此时将开始执行拦截器的 preHandler(...)方法）。
-4. 提取 Request 中的模型数据，填充 Handler 入参，开始执行 Handler（ Controller)。在填充 Handler 的入参过程中，根据你的配置，Spring 将帮你做一些额外的工作：
+
+4. 通过处理器适配器，调用处理器中相关方法
+
+   1. 提取 Request 中的模型数据，填充 Handler 入参，开始执行 Handler（ Controller)。在填充 Handler 的入参过程中，根据你的配置，Spring 将帮你做一些额外的工作：
+
    -  HttpMessageConveter：将请求消息（如 Json、xml 等数据）转换成一个对象，将对象转换为指定的响应信息
    -  数据转换：对请求消息进行数据转换。如 String 转换成 Integer、Double 等。
    -  数据格式化：对请求消息进行数据格式化。如将字符串转换成格式化数字或格式化日期等。
    -  数据验证：验证数据的有效性（长度、格式等），验证结果存储到BindingResult 或 Error 中。
+
 5. Handler(Controller)执行完成后，向 DispatcherServlet 返回一个ModelAndView 对象；
+
 6. 根据返回的 ModelAndView，选择一个适合的 ViewResolver（必须是已经注册到 Spring 容器中的 ViewResolver)返回给DispatcherServlet。
+
 7. ViewResolver 结合 Model 和 View，来渲染视图。
+
 8. 视图负责将渲染结果返回给客户端。
 
-### Spring中Autowired和Resource关键字的区别
-
-@Resource和@Autowired都是做bean的注入时使用，其实@Resource并不是Spring的注解，它的包是javax.annotation.Resource，需要导入，但是Spring支持该注解的注入。
-
-##### 共同点
-
-两者都可以写在字段和setter方法上。两者如果都写在字段上，那么就不需要再写setter方法
-
-##### 不同点
-
-1. @Autowired为Spring提供的注解，需要导入包org.springframework.beans.factory.annotation.Autowired;只按照byType注入
-2. @Autowired注解是按照类型（byType）装配依赖对象，默认情况下它要求依赖对象必须存在，如果允许null值，可以设置它的required属性为false。如果我们想使用按照名称（byName）来装配，可以结合@Qualifier注解一起使用
-3. @Resource默认按照ByName自动注入，由J2EE提供，需要导入包javax.annotation.Resource。@Resource有两个重要的属性：name和type，而Spring将@Resource注解的name属性解析为bean的名字，而type属性则解析为bean的类型。所以，如果使用name属性，则使用byName的自动注入策略，而使用type属性时则使用byType自动注入策略。如果既不制定name也不制定type属性，这时将通过反射机制使用byName自动注入策略
-4. @Resource装配顺序：
-   如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到则抛出异
-   常。
-   如果指定了name，则从上下文中查找名称（id）匹配的bean进行装配，找不到则抛出异常。
-   如果指定了type，则从上下文中找到类似匹配的唯一bean进行装配，找不到或是找到多个，都会抛出异常
-   如果既没有指定name，又没有指定type，则自动按照byName方式进行装配；如果没有匹配，则回退为一个原始类型进行匹配，如果匹
-   配则自动装配。@Resource的作用相当于@Autowired，只不过@Autowired按照byType自动注入
-
-### Spring框架中都用到了哪些设计模式
-
-1. 工厂模式：BeanFactory就是简单工厂模式的体现，用来创建对象的实例；
-2. 单例模式：Bean默认为单例模式。
-3. 代理模式：Spring的AOP功能用到了JDK的动态代理和CGLIB字节码生成技术；
-4. 模板方法：用来解决代码重复的问题。比如. RestTemplate, JmsTemplate, JpaTemplate。
-5. 观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener
-6. 适配器模式 advisorAdapter 接口
-7. 责任链模式  BeanPostProcessor
 
 
+### SpringMVC 参数注入 
 
+通过参数解析器进行参数解析 
 
+### Spring 和Spring MVC 容器之间的关系
 
-### spring 中的事件
-
-1. 上下文更新事件（ContextRefreshedEvent）：该事件会在 ApplicationContext 被初始化或者更新时发布。也可以在调用 ConfigurableApplicationContext 接口中的 refresh()方法时被触发
-2. 上下文开始事件（ContextStartedEvent）：当容器调用 ConfigurableApplicationContext 的Start()方法开始/重新开始容器时触发该事件
-3. 上下文停止事件（ContextStoppedEvent）：当容器调用 ConfigurableApplicationContext 的Stop()方法停止容器时触发该事件
-4. 上下文关闭事件（ContextClosedEvent）：当 ApplicationContext 被关闭时触发该事件。容器被关闭时，其管理的所有单例 Bean 都被销毁
-5. 请求处理事件（RequestHandledEvent）：在 Web 应用中，当一个 http 请求（request）结束触发该事件。
+Spring Spring MVC 父子容器  Spring容器为父容器，SpringMVC为子容器，子容器可以引用父容器中的Bean，而父容器不可以引用子容器中的Bean。Spring 可以排除 Controller  的Bean  
 
 ### Springmvc controller方法中为什么不能定义局部变量
 
@@ -720,6 +760,21 @@ Autowired  通过bean 的后置处理器进行解析的。
 而Servlet的filter是基于函数回调实现的过滤器，Filter主要是针对URL地址做一个编码的事情、过滤掉没用的参数、安全校验（比较泛的，比如登录不登录之类）
 
 ## 事务
+
+### Spring 支持的事务管理类型和实现方式
+
+1. 编程式事务管理。 通过编码的方式管理事务 ，但是难以维护
+2. 声明式事务管理  将业务和事务管理分离。 只需要注解和XML 配置来管理事务
+
+#### 声明式事务的实现方式
+
+1. 基于接口
+   1. 基于TransactionInterceptor 
+   2. 基于TransactionProcxyFactoryBean 
+2. 基于xml
+3. 基于@Transactional 注解
+
+
 
 ### Spring 中的事务是如何实现的
 
@@ -767,6 +822,8 @@ spring事务的传播行为说的是，当多个事务同时存在的时候，sp
 6. PROPAGATION_NEVER：以非事务方式执行，如果当前存在事务，则抛出异常
 7. PROPAGATION_NESTED：如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则按REQUIRED属性执行
 
+![image-20211029145447204](https://gitee.com/Sean0516/image/raw/master/img/image-20211029145447204.png)
+
 ### Spring中的隔离级别
 
 1.  ISOLATION_DEFAULT：这是个 PlatfromTransactionManager 默认的隔离级别，使用数据库默认的事务隔离级别
@@ -775,6 +832,8 @@ spring事务的传播行为说的是，当多个事务同时存在的时候，sp
 4.  ISOLATION_REPEATABLE_READ：可重复读，保证一个事务修改的数据提交后才能被另一事务读取，但是不能看到该事务对已有记录的更新
 5.  ISOLATION_SERIALIZABLE：一个事务在执行的过程中完全看不到其他事务对数据库所做的更新。
 
+
+
 ### Spring如何管理事务的
 
 Spring事务管理主要包括3个接口，Spring事务主要由以下三个共同完成的
@@ -782,6 +841,8 @@ Spring事务管理主要包括3个接口，Spring事务主要由以下三个共�
 1. PlatformTransactionManager：事务管理器，主要用于平台相关事务的管理。主要包括三个方法：①、commit：事务提交。②、rollback：事务回滚。③、getTransaction：获取事务状态
 2. TransacitonDefinition：事务定义信息，用来定义事务相关属性，给事务管理器PlatformTransactionManager使用这个接口有下面四个主要方法：①、getIsolationLevel：获取隔离级别。②、getPropagationBehavior：获取传播行为。③、getTimeout获取超时时间。④、isReadOnly：是否只读（保存、更新、删除时属性变为false--可读写，查询时为true--只读）事务管理器能够根据这个返回值进行优化，这些事务的配置信息，都可以通过配置文件进行配置
 3. TransationStatus：事务具体运行状态，事务管理过程中，每个时间点事务的状态信息。例如：①、hasSavepoint()：返回这个事务内部是否包含一个保存点。②、isCompleted()：返回该事务是否已完成，也就是说，是否已经提交或回滚。③、isNewTransaction()：判断当前事务是否是一个新事务
+
+## Spring Security 
 
 
 
