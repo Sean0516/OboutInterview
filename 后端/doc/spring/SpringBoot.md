@@ -1,4 +1,56 @@
-# 
+### new SpringApplication 执行的方法
+
+```java
+this.resourceLoader = resourceLoader; // 配置resource loader  
+this.webApplicationType = WebApplicationType.deduceFromClasspath(); //  判断当前应用程序的类型
+this.setInitializers(this.getSpringFactoriesInstances(ApplicationContextInitializer.class)); // 获取初始化容器的实例对象 从 ,ETA-INFO/spring.factories 读取到ApplicationContextInitializer 类的实例合计并去重 （一共五个）
+this.setListeners(this.getSpringFactoriesInstances(ApplicationListener.class)); // 获取到监听器的实例对象  （10 个对象） 从 META-INFO/spring.factories 读取ApplicationListener 类的实例名称集合并去重
+this.mainApplicationClass = this.deduceMainApplicationClass(); // 找到当前应用程序的主类
+```
+
+### run 方法
+
+```java
+public ConfigurableApplicationContext run(String... args) {
+    StopWatch stopWatch = new StopWatch(); // 设置启动的时间
+    stopWatch.start();
+    ConfigurableApplicationContext context = null; //设置应用上下文
+    this.configureHeadlessProperty(); //  设置java.awt.headless系统参数为true
+    SpringApplicationRunListeners listeners = this.getRunListeners(args);// 创建监听器对象 SpringApplicationRunLinstener 从配置文件中读取到EventPublishingRunListener
+    listeners.starting();
+
+    try {
+        ApplicationArguments applicationArguments = new DefaultApplicationArguments(args); // 获取命令行的参数
+        ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments); // 
+        this.configureIgnoreBeanInfo(environment); 
+        Banner printedBanner = this.printBanner(environment);// 打印 Banner 
+        context = this.createApplicationContext();
+        this.prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+        this.refreshContext(context);
+        this.afterRefresh(context, applicationArguments);
+        stopWatch.stop();
+        if (this.logStartupInfo) {
+            (new StartupInfoLogger(this.mainApplicationClass)).logStarted(this.getApplicationLog(), stopWatch);
+        }
+
+        listeners.started(context);
+        this.callRunners(context, applicationArguments);
+    } catch (Throwable var9) {
+        this.handleRunFailure(context, var9, listeners);
+        throw new IllegalStateException(var9);
+    }
+
+    try {
+        listeners.running(context);
+        return context;
+    } catch (Throwable var8) {
+        this.handleRunFailure(context, var8, (SpringApplicationRunListeners)null);
+        throw new IllegalStateException(var8);
+    }
+}
+```
+
+
 
 ### SpringBoot  自动装配原理
 
