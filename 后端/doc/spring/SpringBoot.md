@@ -20,8 +20,8 @@ public ConfigurableApplicationContext run(String... args) {
     listeners.starting();
 
     try {
-        ApplicationArguments applicationArguments = new DefaultApplicationArguments(args); // 获取命令行的参数
-        ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments); // 
+        ApplicationArguments applicationArguments = new DefaultApplicationArguments(args); // 装配命令行参数
+        ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments); // 准备应用程序运行的环境变量
         this.configureIgnoreBeanInfo(environment); 
         Banner printedBanner = this.printBanner(environment);// 打印 Banner 
         context = this.createApplicationContext();
@@ -50,7 +50,46 @@ public ConfigurableApplicationContext run(String... args) {
 }
 ```
 
+### 准备应用程序运行的环境变量
 
+```java
+private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments) {
+    ConfigurableEnvironment environment = this.getOrCreateEnvironment(); // 根据系统类型来创建环境变量对象 StandardServletEnvironment
+    this.configureEnvironment((ConfigurableEnvironment)environment, applicationArguments.getSourceArgs()); 
+    ConfigurationPropertySources.attach((Environment)environment);
+    listeners.environmentPrepared((ConfigurableEnvironment)environment);
+    this.bindToSpringApplication((ConfigurableEnvironment)environment);
+    if (!this.isCustomEnvironment) {
+        environment = (new EnvironmentConverter(this.getClassLoader())).convertEnvironmentIfNecessary((ConfigurableEnvironment)environment, this.deduceEnvironmentClass());
+    }
+
+    ConfigurationPropertySources.attach((Environment)environment);
+    return (ConfigurableEnvironment)environment;
+}
+	
+	//  在MutablePropertySources 中添加  servletConfigInitParams  servletContextInitParams systemProperties systemEnvironment 属性值
+    protected void customizePropertySources(MutablePropertySources propertySources) {
+        propertySources.addLast(new StubPropertySource("servletConfigInitParams")); // servlet config 的配置值
+        propertySources.addLast(new StubPropertySource("servletContextInitParams")); // servlet context 的配置值
+        if (JndiLocatorDelegate.isDefaultJndiEnvironmentAvailable()) {
+            propertySources.addLast(new JndiPropertySource("jndiProperties"));
+        }
+
+        super.customizePropertySources(propertySources);
+    }
+
+    protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) {
+        if (this.addConversionService) {
+            ConversionService conversionService = ApplicationConversionService.getSharedInstance(); // 加载转换器和格式化器
+            environment.setConversionService((ConfigurableConversionService)conversionService);
+        }
+
+        this.configurePropertySources(environment, args); // 配置PropertySources
+        this.configureProfiles(environment, args); // 加载 spring.profile 
+    }
+
+
+```
 
 ### SpringBoot  自动装配原理
 
