@@ -56,11 +56,11 @@ public ConfigurableApplicationContext run(String... args) {
 private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments) {
     ConfigurableEnvironment environment = this.getOrCreateEnvironment(); // 根据系统类型来创建环境变量对象 StandardServletEnvironment
     this.configureEnvironment((ConfigurableEnvironment)environment, applicationArguments.getSourceArgs()); 
-    ConfigurationPropertySources.attach((Environment)environment);
-    listeners.environmentPrepared((ConfigurableEnvironment)environment);
+    ConfigurationPropertySources.attach((Environment)environment); // 创建configtionProperties
+    listeners.environmentPrepared((ConfigurableEnvironment)environment); // 调用对应的listenser 加载对应的配置文件
     this.bindToSpringApplication((ConfigurableEnvironment)environment);
     if (!this.isCustomEnvironment) {
-        environment = (new EnvironmentConverter(this.getClassLoader())).convertEnvironmentIfNecessary((ConfigurableEnvironment)environment, this.deduceEnvironmentClass());
+        environment = (new EnvironmentConverter(this.getClassLoader())).convertEnvironmentIfNecessary((ConfigurableEnvironment)environment, this.deduceEnvironmentClass());  // 根据环境对Environment 做转换 ，如果Environment类型不对，会做转换，正常则不做转换
     }
 
     ConfigurationPropertySources.attach((Environment)environment);
