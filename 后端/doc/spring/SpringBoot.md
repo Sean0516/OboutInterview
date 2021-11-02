@@ -3,7 +3,7 @@
 ```java
 this.resourceLoader = resourceLoader; // 配置resource loader  
 this.webApplicationType = WebApplicationType.deduceFromClasspath(); //  判断当前应用程序的类型
-this.setInitializers(this.getSpringFactoriesInstances(ApplicationContextInitializer.class)); // 获取初始化容器的实例对象 从 ,ETA-INFO/spring.factories 读取到ApplicationContextInitializer 类的实例合计并去重 （一共五个）
+this.setInitializers(this.getSpringFactoriesInstances(ApplicationContextInitializer.class)); // 获取初始化容器的实例对象 从 ,ETA-INFO/spring.factories 读取到ApplicationContextInitializer 类的实例合计并去重 （一七共个）
 this.setListeners(this.getSpringFactoriesInstances(ApplicationListener.class)); // 获取到监听器的实例对象  （10 个对象） 从 META-INFO/spring.factories 读取ApplicationListener 类的实例名称集合并去重
 this.mainApplicationClass = this.deduceMainApplicationClass(); // 找到当前应用程序的主类
 ```
@@ -24,30 +24,52 @@ public ConfigurableApplicationContext run(String... args) {
         ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments); // 准备应用程序运行的环境变量
         this.configureIgnoreBeanInfo(environment); 
         Banner printedBanner = this.printBanner(environment);// 打印 Banner 
-        context = this.createApplicationContext();
+        context = this.createApplicationContext(); // 创建 AnnotationConfigServletWebServerApplicationContext 对象（根据webApplicationType 进行选择创建）
         this.prepareContext(context, environment, listeners, applicationArguments, printedBanner);
-        this.refreshContext(context);
-        this.afterRefresh(context, applicationArguments);
-        stopWatch.stop();
+        this.refreshContext(context); // abstractApplicaitonContext ioc 的基本refresh 流程
+        this.afterRefresh(context, applicationArguments);  // 用于完成后续的扩展 
+        stopWatch.stop(); // 结束时间打印
         if (this.logStartupInfo) {
             (new StartupInfoLogger(this.mainApplicationClass)).logStarted(this.getApplicationLog(), stopWatch);
         }
 
-        listeners.started(context);
-        this.callRunners(context, applicationArguments);
+        listeners.started(context); // 监听器需要执行的方法 根据对应的SpringApplicationStartdEvent事件,获取 ApplicationListeners 并执行
+        this.callRunners(context, applicationArguments); // 
     } catch (Throwable var9) {
         this.handleRunFailure(context, var9, listeners);
         throw new IllegalStateException(var9);
     }
 
     try {
-        listeners.running(context);
+        listeners.running(context); // 执行context ，并返回context 
         return context;
     } catch (Throwable var8) {
         this.handleRunFailure(context, var8, (SpringApplicationRunListeners)null);
         throw new IllegalStateException(var8);
     }
 }
+	
+    private void callRunners(ApplicationContext context, ApplicationArguments args) {
+        // ApplicaitonReadyEvent 
+        List<Object> runners = new ArrayList();
+        runners.addAll(context.getBeansOfType(ApplicationRunner.class).values());
+        runners.addAll(context.getBeansOfType(CommandLineRunner.class).values());
+        AnnotationAwareOrderComparator.sort(runners);
+        Iterator var4 = (new LinkedHashSet(runners)).iterator();
+
+        while(var4.hasNext()) {
+            Object runner = var4.next();
+            if (runner instanceof ApplicationRunner) {
+                this.callRunner((ApplicationRunner)runner, args);
+            }
+
+            if (runner instanceof CommandLineRunner) {
+                this.callRunner((CommandLineRunner)runner, args);
+            }
+        }
+
+    }
+
 ```
 
 ### 准备应用程序运行的环境变量
@@ -89,6 +111,110 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
     }
 
 
+```
+
+### 准备Context信息
+
+```java
+    public AnnotationConfigServletWebServerApplicationContext() {
+        this.annotatedClasses = new LinkedHashSet();
+        this.reader = new AnnotatedBeanDefinitionReader(this); // 注解 bean对象读取器 
+        this.scanner = new ClassPathBeanDefinitionScanner(this); // 扫描注解 bean 对象
+    }
+
+
+private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment, SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
+    context.setEnvironment(environment);
+    this.postProcessApplicationContext(context); 
+    this.applyInitializers(context); // 执行应用初始化器 ,添加BeanFactoryPostProcessor 和 ApplicationListener
+    listeners.contextPrepared(context); // ApplicationContextInitializedEvent  事件， 遍历监听器执行相关逻辑
+    if (this.logStartupInfo) { // 日志打印
+        this.logStartupInfo(context.getParent() == null);
+        this.logStartupProfileInfo(context);
+    }
+
+    ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+    beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
+    if (printedBanner != null) {
+        beanFactory.registerSingleton("springBootBanner", printedBanner);
+    }
+
+    if (beanFactory instanceof DefaultListableBeanFactory) {
+        ((DefaultListableBeanFactory)beanFactory).setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);// 不允许bean 重写
+    }
+
+    if (this.lazyInitialization) {
+        context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor()); // 添加懒加载的BeanFactoryPostProcessor 
+    }
+
+    Set<Object> sources = this.getAllSources();
+    Assert.notEmpty(sources, "Sources must not be empty");
+    this.load(context, sources.toArray(new Object[0]));  //  注册当前springboot启动的主类到 BeanDefinition
+    listeners.contextLoaded(context); // 通过ApplicationPreparedEvent  执行对应的Linstener  (ConfigFileApplicationLinstener ,LoggingApplicationListener BackGroundApplicationListener  )
+}
+// load  方法
+protected void load(ApplicationContext context, Object[] sources) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Loading source " + StringUtils.arrayToCommaDelimitedString(sources));
+        }
+
+        BeanDefinitionLoader loader = this.createBeanDefinitionLoader(this.getBeanDefinitionRegistry(context), sources);
+        if (this.beanNameGenerator != null) {
+            loader.setBeanNameGenerator(this.beanNameGenerator);
+        }
+
+        if (this.resourceLoader != null) {
+            loader.setResourceLoader(this.resourceLoader);
+        }
+
+        if (this.environment != null) {
+            loader.setEnvironment(this.environment);
+        }
+
+        loader.load();
+    }
+
+ private int load(Object source) {
+        Assert.notNull(source, "Source must not be null");
+        if (source instanceof Class) {
+            return this.load((Class)source);
+        } else if (source instanceof Resource) {
+            return this.load((Resource)source);
+        } else if (source instanceof Package) {
+            return this.load((Package)source);
+        } else if (source instanceof CharSequence) {
+            return this.load((CharSequence)source);
+        } else {
+            throw new IllegalArgumentException("Invalid source type " + source.getClass());
+        }
+    }
+    private int load(Class<?> source) {
+        if (this.isGroovyPresent() && BeanDefinitionLoader.GroovyBeanDefinitionSource.class.isAssignableFrom(source)) {
+            BeanDefinitionLoader.GroovyBeanDefinitionSource loader = (BeanDefinitionLoader.GroovyBeanDefinitionSource)BeanUtils.instantiateClass(source, BeanDefinitionLoader.GroovyBeanDefinitionSource.class);
+            this.load(loader);
+        }
+
+        if (this.isEligible(source)) {
+            this.annotatedReader.register(new Class[]{source}); // 注册当前springboot启动的主类到 BeanDefinition
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+
+// 应用初始化器 ,添加BeanFactoryPostProcessor 和 ApplicationListener
+    protected void applyInitializers(ConfigurableApplicationContext context) {
+        Iterator var2 = this.getInitializers().iterator();
+
+        while(var2.hasNext()) {
+            ApplicationContextInitializer initializer = (ApplicationContextInitializer)var2.next();
+            Class<?> requiredType = GenericTypeResolver.resolveTypeArgument(initializer.getClass(), ApplicationContextInitializer.class);
+            Assert.isInstanceOf(requiredType, context, "Unable to call initializer.");
+            initializer.initialize(context);
+        }
+
+    }
 ```
 
 ### SpringBoot  自动装配原理
