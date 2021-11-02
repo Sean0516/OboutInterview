@@ -25,6 +25,10 @@ BeanFactory 创建对象的时候是一套完整的标准化流程，如果想�
 2. getObjectType 返回当前对象的类型
 3. getObject ，此方法需要自己自定义实现，自己完全的控制Bean 的创建流程。
 
+### 如何在自动注入没有找到 依赖Bean 的时候不报错
+
+将 required 设置为false
+
 ### 说说 BeanFactory 和 ApplicationContext 的区别？ 什么是延迟实例化，它的优缺点是什么
 
 BeanFactory和ApplicationContext是Spring的两大核心接口，都可以当做Spring的容器。其中ApplicationContext是BeanFactory的子接口
@@ -44,26 +48,6 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 - BeanFactory通常以编程的方式被创建，ApplicationContext还能以声明的方式创建，如使用ContextLoader。
 - BeanFactory和ApplicationContext都支持BeanPostProcessor、BeanFactoryPostProcessor的使用，但两者之间的区别是：BeanFactory需要手动注册，而ApplicationContext则是自动注册
 
-### Spring　中用到的设计模式
-
-单例模式　：　bean 默认都是单例的
-
-原型模式：　指定作用域　prototype
-
-工程模式　　beanfactory
-
-模板方法　　
-
-策略模式　　ｘｍｌＢｅａｎＤｅｆｉｎｉｔｉｏｎＲｅａｄｅｒ
-
-观察者模式　　ｌｉｓｔｅｎｅｒ　　ｅｖｅｎｔ
-
-适配器模式　　　adapter
-
-责任链模式　　使用ａｏｐ　的时候，会先生成一个拦截器
-
-代理模式　　动态代理
-
 
 
 ### Spring框架中都用到了哪些设计模式
@@ -72,9 +56,10 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 2. 单例模式：Bean默认为单例模式。
 3. 代理模式：Spring的AOP功能用到了JDK的动态代理和CGLIB字节码生成技术；
 4. 模板方法：用来解决代码重复的问题。比如. RestTemplate, JmsTemplate, JpaTemplate。
-5. 观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener
-6. 适配器模式 advisorAdapter 接口
-7. 责任链模式  BeanPostProcessor
+5. 策略模式  XmlBeanDefinitionReader
+6. 观察者模式：定义对象键一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖于它的对象都会得到通知被制动更新，如Spring中listener的实现--ApplicationListener Event 
+7. 适配器模式 advisorAdapter 接口
+8. 责任链模式  BeanPostProcessor 　使用aop的时候，会先生成一个拦截器
 
 ### spring 中的事件
 
@@ -111,7 +96,7 @@ Spring 框架的核心是 Spring 容器。容器创建对象，将它们装配�
 
 #### 分
 
-1. 一般聊ioc 容器要涉及到容器的创建过程 （BeanFactory DefaultListableBeanFactory）x向Bean 工程中设置一些参数 。 BeanPostProcessor Aware 接口的子类
+1. 一般聊ioc 容器要涉及到容器的创建过程 （BeanFactory DefaultListableBeanFactory）向Bean 工厂中设置一些参数 。 BeanPostProcessor Aware 接口的子类
 2. 加载解析bean 对象。 准备要创建的bean 对象的的BeanDefinition （xml 或者注解的解析过程）
 3. BeanFactoyPostProcessor  的处理 
 4. BeanPostProcessor 的注册  ，方便后续对Bean 对象完成具体的扩展功能
@@ -321,7 +306,12 @@ public void refresh() throws BeansException, IllegalStateException {
    2. 重写 gerBeanClass
    3. 重写doParse
 
+### spring 中有多少种 IOC 容器
 
+BeanFactory - BeanFactory 就像一个包含 bean 集合的工厂类。它会在客户端要求时实例化 bean。
+ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它在 BeanFactory 基础上提供了一些额外的功能
+
+## Bean
 
 ### 哪些是重要的 bean 生命周期方法？
 
@@ -394,10 +384,6 @@ Bean 的创建顺序是由BeanDefinition 的注册顺序来决定的，当然依
  ![image-20211026202657617](https://gitee.com/Sean0516/image/raw/master/img/image-20211026202657617.png)
 
 
-
-### 如何在自动注入没有找到 依赖Bean 的时候不报错
-
-将 required 设置为false
 
 
 
@@ -488,10 +474,7 @@ private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<
 
 在依赖注入中，您不必创建对象，但必须描述如何创建它们。您不是直接在代码中将组件和服务连接在一起，而是描述配置文件中哪些组件需要哪些服务。由 IoC容器将它们装配在一起
 
-### spring 中有多少种 IOC 容器
 
-BeanFactory - BeanFactory 就像一个包含 bean 集合的工厂类。它会在客户端要求时实例化 bean。
-ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它在 BeanFactory 基础上提供了一些额外的功能
 
 | BeanFactory              | ApplicationContext     |
 | ------------------------ | ---------------------- |
@@ -615,6 +598,35 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 ## AOP
 
+### AOP 面向切面编程
+
+ａｏｐ　是ｉｏｃ　的一个扩展功能，现有IOC　，再有ａｏｐ　，只是ｉｏｃ　整个流程中的一个扩展点。　　ｂｅａｎｐｏｓｔＰｒｏｃｅｓｓｏｒ
+
+总：	ａｏｐ　概念，动态代理
+
+分：　ａｏｐ　　本身是一个扩展功能，在BｅａｎＰｏｓｔＰｒｏｃｅｓｓｏｒ　的后置处理方法中来进行实现
+
+1.  代理对象的创建过程（ａｄｖｉｃｅ　　切面，切点）
+2.  通过ｊｄｋ　或者ｃｇｌｉｂ　的方式来生成代理对象
+3.  在执行方法调用时，会调用到生成的字节码文件中，直接返回DｙｎａｍｉｃＡｄｖｉｓｏｒｅｄＩｎｔｅｒｃｅｐｔｏｒ　类的ｉｎｔｅｒｃｅｐｔ　方法，从此方法开始执行
+4.  根据之前定义好的通知来生成拦截器链
+5.  从拦截器中一次获取每一个通知开始进行执行，在执行过程中，为了方便找到下一个通知是那个，会有一个CｇｌｉＭｅｔｈｏｄＩｎｖｏｃａｔｉｏｎ　对象，找的时候从-1的位置依次开始查找并执行
+
+
+
+### JDK 动态代理和CGLIB 动态代理的区别
+
+1. JDK 动态代理只支持接口的代理，不支持类的代理
+2. JDK 在运行时为目标生成了一个动态代理类
+3. 该代理类是实现目标类接口，并且代理类会实现接口中的所有方法，进行增强
+4. 调用时，会通过代理类先去调用处理类进行增强，在通过反射的方法进行调用目标方法。 
+
+如果代理类没有实现接口，会使用CGLIB 来动态代理目标类
+
+1. CGLIB 的底层通过ASM 在运行时，动态的生成目标类的一个子类。 
+2. 并且会重写父类所有的方法增强
+3. 调用时先通过代理类进行增强，再直接调用父类对象的方法进行调用目标方法，从而实现AOP
+
 ### Spring AOP里面的几个名词
 
 1. 切面（Aspect）：被抽取的公共模块，可能会横切多个对象。 在Spring AOP中，切面可以使用通用类（基于模式的风格） 或者在普通类中以 @AspectJ 注解来实现
@@ -632,35 +644,6 @@ Autowired  通过bean 的后置处理器进行解析的。
 3. After Throwing - 这些类型的 Advice 仅在 joinpoint 方法通过抛出异常退出并使用 @AfterThrowing 注解标记配置时执行。
 4. After (finally) - 这些类型的 Advice 在连接点方法之后执行，无论方法退出是正常还是异常返回，并使用 @After 注解标记进行配置。
 5. Around - 这些类型的 Advice 在连接点之前和之后执行，并使用@Around 注解标记进行配置
-
-### AOP 面向切面编程
-
-ａｏｐ　是ｉｏｃ　的一个扩展功能，现有IOC　，再有ａｏｐ　，只是ｉｏｃ　整个流程中的一个扩展点。　　ｂｅａｎｐｏｓｔＰｒｏｃｅｓｓｏｒ
-
-总：	ａｏｐ　概念，动态代理
-
-分：　ａｏｐ　　本身是一个扩展功能，在BｅａｎＰｏｓｔＰｒｏｃｅｓｓｏｒ　的后置处理方法中来进行实现
-
-1.  代理对象的创建过程（ａｄｖｉｃｅ　　切面，切点）
-2. 通过ｊｄｋ　或者ｃｇｌｉｂ　的方式来生成代理对象
-3. 在执行方法调用时，会调用到生成的字节码文件中，直接返回DｙｎａｍｉｃＡｄｖｉｓｏｒｅｄＩｎｔｅｒｃｅｐｔｏｒ　类的ｉｎｔｅｒｃｅｐｔ　方法，从此方法开始执行
-4. 根据之前定义好的通知来生成拦截器链
-5. 从拦截器中一次获取每一个通知开始进行执行，在执行过程中，为了方便找到下一个通知是那个，会有一个CｇｌｉＭｅｔｈｏｄＩｎｖｏｃａｔｉｏｎ　对象，找的时候从-1的位置依次开始查找并执行
-
-
-
-### JDK 动态代理和CGLIB 动态代理的区别
-
-1. JDK 动态代理只支持接口的代理，不支持类的代理
-2. JDK 在运行时为目标生成了一个动态代理类
-3. 该代理类是实现目标类接口，并且代理类会实现接口中的所有方法，进行增强
-4. 调用时，会通过代理类先去调用处理类进行增强，在通过反射的方法进行调用目标方法。 
-
-如果代理类没有实现接口，会使用CGLIB 来动态代理目标类
-
-1. CGLIB 的底层通过ASM 在运行时，动态的生成目标类的一个子类。 
-2. 并且会重写父类所有的方法增强
-3. 调用时先通过代理类进行增强，再直接调用父类对象的方法进行调用目标方法，从而实现AOP
 
 
 
@@ -692,8 +675,6 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 ## MVC
 
-![image-20210806112045164](C:\Users\Sean\AppData\Roaming\Typora\typora-user-images\image-20210806112045164.png)
-
 ### Spring MVC 组件
 
 1. DispatcherServlet：（前端控制器） 由框架提供，作用： 接收请求，进行请求分发，处理响应结果
@@ -703,8 +684,6 @@ Autowired  通过bean 的后置处理器进行解析的。
 5. ViewResolver： 试图解析器  把逻辑视图解析为真正的物理视图   （支持多种视图技术  ）
 
 ### DispatcherServlet 的工作流程
-
-![image-20210630153343101](C:\Users\Sean\AppData\Roaming\Typora\typora-user-images\image-20210630153343101.png)
 
 ![image-20211029154054847](https://gitee.com/Sean0516/image/raw/master/img/image-20211029154054847.png)
 
