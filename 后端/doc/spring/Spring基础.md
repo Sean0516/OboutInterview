@@ -61,13 +61,7 @@ ApplicationContext接口作为BeanFactory的派生，除了提供BeanFactory所�
 7. 适配器模式 advisorAdapter 接口
 8. 责任链模式  BeanPostProcessor 　使用aop的时候，会先生成一个拦截器
 
-### spring 中的事件
 
-1. 上下文更新事件（ContextRefreshedEvent）：该事件会在 ApplicationContext 被初始化或者更新时发布。也可以在调用 ConfigurableApplicationContext 接口中的 refresh()方法时被触发
-2. 上下文开始事件（ContextStartedEvent）：当容器调用 ConfigurableApplicationContext 的Start()方法开始/重新开始容器时触发该事件
-3. 上下文停止事件（ContextStoppedEvent）：当容器调用 ConfigurableApplicationContext 的Stop()方法停止容器时触发该事件
-4. 上下文关闭事件（ContextClosedEvent）：当 ApplicationContext 被关闭时触发该事件。容器被关闭时，其管理的所有单例 Bean 都被销毁
-5. 请求处理事件（RequestHandledEvent）：在 Web 应用中，当一个 http 请求（request）结束触发该事件。
 
 ## IOC
 
@@ -720,7 +714,19 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 Spring Spring MVC 父子容器  Spring容器为父容器，SpringMVC为子容器，子容器可以引用父容器中的Bean，而父容器不可以引用子容器中的Bean。Spring 可以排除 Controller  的Bean  
 
-### Springmvc controller方法中为什么不能定义局部变量
+### Spring SpringMVC 为什么需要父子容器
+
+不一定需要父子容器 ，spring boot 就只有一个容器  
+
+1. 父子容器的主要作用是为了划分框架边界 。 单一职责
+
+2. 规范整体架构 。父容器无法访问子容器的controller  ，子容器的controller 可以访问父容器的service 
+
+3. 方便子容器的切换。 
+
+   
+
+### Springmvc controller方法中为什么不能定义局部变量 （是不是单例的，是不是线程安全的）
 
 因为controller是默认单例模式，高并发下全局变量会出现线程安全问题
 现这种问题如何解决呢
@@ -730,11 +736,17 @@ Spring Spring MVC 父子容器  Spring容器为父容器，SpringMVC为子容器
 3. 使用@Scope("session")，会话级别
 4. 将控制器的作用域从单例改为原型，即在spring配置文件Controller中声明 scope="prototype"，每次都创建新的controller
 
+
+
 ### SpringMVC中的拦截器和Servlet中的filter有什么区别
 
 首先最核心的一点他们的拦截侧重点是不同的，SpringMVC中的拦截器是依赖JDK的反射实现的，SpringMVC的拦截器主要是进行拦截请求，通过对Handler进行处理的时候进行拦截，先声明的拦截器中的preHandle方法会先执行，然而它的postHandle方法（他是介于处理完业务之后和返回结果之前）和afterCompletion方法却会后执行。并且Spring的拦截器是按照配置的先后顺序进行拦截的
 
 而Servlet的filter是基于函数回调实现的过滤器，Filter主要是针对URL地址做一个编码的事情、过滤掉没用的参数、安全校验（比较泛的，比如登录不登录之类）
+
+1. 拦截器不依赖 servlet 容器，过滤器依赖servlet容器
+2. 拦截器只对action请求 起作用， 而过滤器则可以对几乎所有的请求起作用
+3. 拦截器可以访问action 上下文里的对象。 过滤器不能访问
 
 ## 事务
 
@@ -810,3 +822,80 @@ Spring事务管理主要包括3个接口，Spring事务主要由以下三个共�
 
 
 
+## Spring 事件监听
+
+### spring 事件监听的核心机制
+
+​	原理： 观察者模式
+
+##### 异步支持
+
+​	异步发布事件的核心 ，多线程发布 ，非阻塞的 
+
+spring 的事件监听由三个部分组成
+
+	1. 事件 （ApplicationEvent ）具体的监听事件
+	2. 监听器  ApplicationListener  监听特定事件，并在内部定义了事件发生后的响应逻辑
+	3. 事件发布器  ApplicationEventMulticaster 负责通知观察者，对外提供发布事件和增删事件监听器的接口。 
+
+### spring 中的事件
+
+1. 上下文更新事件（ContextRefreshedEvent）：该事件会在 ApplicationContext 被初始化或者更新时发布。也可以在调用 ConfigurableApplicationContext 接口中的 refresh()方法时被触发
+2. 上下文开始事件（ContextStartedEvent）：当容器调用 ConfigurableApplicationContext 的Start()方法开始/重新开始容器时触发该事件
+3. 上下文停止事件（ContextStoppedEvent）：当容器调用 ConfigurableApplicationContext 的Stop()方法停止容器时触发该事件
+4. 上下文关闭事件（ContextClosedEvent）：当 ApplicationContext 被关闭时触发该事件。容器被关闭时，其管理的所有单例 Bean 都被销毁
+5. 请求处理事件（RequestHandledEvent）：在 Web 应用中，当一个 http 请求（request）结束触发该事件。
+
+### 自定义事件
+
+#### 	事件定义
+
+```java
+public class CustomEvent extends ApplicationEvent {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+    private String eventName;
+
+    public CustomEvent(Object source, String eventName) {
+        super(source);
+        logger.info("event name [{}] class name [{}]", eventName, source);
+        this.eventName = eventName;
+    }
+
+    public String getEventName() {
+        return eventName;
+    }
+}
+```
+
+#### 监听器
+
+```java
+@Component
+public class CustomEventListener implements ApplicationListener<CustomEvent> {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Override
+    public void onApplicationEvent(CustomEvent customEvent) {
+
+        if ("demo" == customEvent.getEventName()) {
+            logger.info("demo event is happen");
+        }else {
+            logger.info("event name [{}] happen",customEvent.getEventName());
+        }
+    }
+}
+```
+
+#### 发布器
+
+```java
+@Component
+public class CustomEventPublisher {
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    public void publish(String msg) {
+        applicationContext.publishEvent(new CustomEvent(this, msg));
+    }
+}
+```

@@ -1,5 +1,11 @@
 # Mybatis
 
+### Mybatis 架构设计
+
+![image-20211103165641735](https://gitee.com/Sean0516/image/raw/master/img/image-20211103165641735.png)
+
+
+
 ### Mybatis 的 Xml 映射文件中，不同的 Xml 映射文件，id 是否可以重复
 
 不同的 Xml 映射文件，如果配置了 namespace，那么 id 可以重复；如果没有配置 namespace，那么 id 不能重复；原因就是 namespace+id 是作为 Map<String, MapperStatement>的 key使用的，如果没有 namespace，就剩下 id，那么，id 重复会导致数据互相覆盖。了 namespace，自然 id 就可以重复，namespace 不同，namespace+id 自然也就不同

@@ -121,8 +121,6 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
         this.reader = new AnnotatedBeanDefinitionReader(this); // 注解 bean对象读取器 
         this.scanner = new ClassPathBeanDefinitionScanner(this); // 扫描注解 bean 对象
     }
-
-
 private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment, SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
     context.setEnvironment(environment);
     this.postProcessApplicationContext(context); 
@@ -219,17 +217,40 @@ protected void load(ApplicationContext context, Object[] sources) {
 
 ### SpringBoot  自动装配原理
 
+#### 	springboot 自动装配是什么，解决了什么问题
+
+​	把配置的bean（包括自己写的和第三方的sdk）自动加入到IOC容器中
+
+#### 	自动装配的实现原理
+
+	1. 当启动spring boot 程序时，会先创建springApplicaiton  对象， 在对象的构造方法中，会进行一些参数的初始化工作。 最主要的是判断当前应用程序的类型以及初始化器和监听器，在这个过程中会加载整个应用程序中的spring.factories 文件，将文件的内容放到缓存中，方便后续使用
+ 	2. springApplication 对象创建完成之后，开始执行run方法，来启动整个应用，在启动过程中， 最主要的方法有两个。 第一个是prepareConext 和 refreshContext 。这两个关键步骤中完成了自动装配的核心功能，前面的处理逻辑包含了上下文的创建，banner 的打印。 异常报告的准备等准备工作。
+ 	3. 在prepareContext 方法中，最主要的是完成了对上下文对象的初始化操作。 包括了属性值的设置。 在整个过程中，有一个非常重要的方法叫做load ，load  主要完成一件事情，将当前启动类作为一个BeanDefinition 注册到registry 中，方便后续在BeanFactoryPostProcessor 调用执行的时候，找到主类，完成 @SpringBootApplication @EnableAutoConfiguration 等注解的解析工作
+ 	4. 在refreshContext 方法中，会进行整个容器刷新过程，会调用spring  的refresh 方法。在自动装配中，会调用invokeBeanFactoryPostProcessor 方法来执行 BeanFactoryPostProcessor 对应的方法，这里主要是对 ConfigrationClassPostProcessor 类的处理。  在执行postProccessorBeanDefinitionRegistry 的时候，会解析处理各种注解 。包括 @PropertySource @ComponentScan @ComponentScans @Bean @Import 注解，这里最重要的是对@Import 注解的解析
+ 	5. 在解析Import 注解的时候，会有一个getImports 的方法，从主类开始递归解析注解，把所有的Import  的注解都解析到。然后再processImport 方法中，对Import 的类进行分类，此处主要识别的是AutoConfigurationImportSelect 归属于ImprotSelect 的子类，在后续过程中会调用deferredImportSelectorHandler  中的process 方法，来完成@EnableAutoConfiguration 的加载
+
+### 为什么springboot的jar 可以直接运行
+
+1. spring boot 提供了一个插件 spring-boot-maven-plugin 用于把程序打包成一个可以执行的jar 包
+2. spring boot  应用打包后，生成一个Fat jar 包含了应用依赖的jar 包和spring boot  loader 相关的类
+3. java -jar 会去找jar 中的 manifest 文件，在里面找到真正的启动类
+4. Fat jar 的启动 Main 函数是 JarLauncher ，他负责创建 LaunchedURLClassLoader 来加载 boot-lib 下面的jar ，并以一个新线程启动应用程序的main 函数
+
+### Spring 内置Tomcat 启动原理
+
 
 
 
 
 ### Spring Boot  自定义start 
 
-
+1. 在resources 下创建文件夹 META-INF   并在目录下创建spring.factories 文件
+2. 在文件中添加我们需要自动装配的 class 
+3. 
 
 ### Spring Aplication run 方法
 
-### Spring  start  自定义开发
+
 
 
 
@@ -283,6 +304,13 @@ protected void load(ApplicationContext context, Object[] sources) {
 2. 在创建spring容器过程中，会利用@ConditionalOnClass 技术来判断当前classpath 中是否存在tomcat 依赖，如果存在，则生成一个启动tomcat的bean
 3. spring 容器创建完之后，会获取启动tomcat 的bean ，并创建tomcat 对象，并绑定端口等。 然后启动tomcat
 
+### Spring  boot  加载配置文件的原理
+
+通过事件监听的方式读取配置文件
+
+1. 会加载一个ApplicationEnviromentPreparedEvent 事件 
+2. 执行ConfigFileApplicationListener 来加载配置文件
+
 ### Spring Boot  中配置文件的加载顺序是怎么样的
 
 优先级从高到低。
@@ -295,3 +323,6 @@ protected void load(ApplicationContext context, Object[] sources) {
 6. jar 包内部的yml 文件
 7. @Configuration 注解上的@PropertySource 
 
+```java
+classpath:/,classpath:/config/,file:./,file:./config/*/,file:./config/
+```
