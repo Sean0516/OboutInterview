@@ -515,7 +515,12 @@ Global-session -  全局作用域，global-session和Portlet应用相关。当�
 1. 直接指定类 （如果是配置类，会按照配置类正常解析，如果是普通类，则会解析为普通Bean ）
 2. 实现了 ImportSelector 的类 ，通过数组的方式，返回一个完整的类路径 ，可以一次性注册多个
 3. 通过实现ImportBeanDefinitionRegistrar 来注册bean ，一次性可以注册多个。 可以通过BeanDefinitionRegistry 来动态的注册BeanDefinition
-4. 
+
+### @Indexed 注解
+
+​	解决ComponentScan 的性能问题） 建立索引表 ,将需要载入容器中的所有类，都加载到(spring.components)中，用于快速生成需要扫描的类的索引，提高扫描性能 （需要添加依赖 spring-indexer）
+
+
 
 ### @Autowired 注解有什么用
 

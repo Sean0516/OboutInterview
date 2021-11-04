@@ -223,11 +223,11 @@ protected void load(ApplicationContext context, Object[] sources) {
 
 #### 	自动装配的实现原理
 
-	1. 当启动spring boot 程序时，会先创建springApplicaiton  对象， 在对象的构造方法中，会进行一些参数的初始化工作。 最主要的是判断当前应用程序的类型以及初始化器和监听器，在这个过程中会加载整个应用程序中的spring.factories 文件，将文件的内容放到缓存中，方便后续使用
- 	2. springApplication 对象创建完成之后，开始执行run方法，来启动整个应用，在启动过程中， 最主要的方法有两个。 第一个是prepareConext 和 refreshContext 。这两个关键步骤中完成了自动装配的核心功能，前面的处理逻辑包含了上下文的创建，banner 的打印。 异常报告的准备等准备工作。
- 	3. 在prepareContext 方法中，最主要的是完成了对上下文对象的初始化操作。 包括了属性值的设置。 在整个过程中，有一个非常重要的方法叫做load ，load  主要完成一件事情，将当前启动类作为一个BeanDefinition 注册到registry 中，方便后续在BeanFactoryPostProcessor 调用执行的时候，找到主类，完成 @SpringBootApplication @EnableAutoConfiguration 等注解的解析工作
- 	4. 在refreshContext 方法中，会进行整个容器刷新过程，会调用spring  的refresh 方法。在自动装配中，会调用invokeBeanFactoryPostProcessor 方法来执行 BeanFactoryPostProcessor 对应的方法，这里主要是对 ConfigrationClassPostProcessor 类的处理。  在执行postProccessorBeanDefinitionRegistry 的时候，会解析处理各种注解 。包括 @PropertySource @ComponentScan @ComponentScans @Bean @Import 注解，这里最重要的是对@Import 注解的解析
- 	5. 在解析Import 注解的时候，会有一个getImports 的方法，从主类开始递归解析注解，把所有的Import  的注解都解析到。然后再processImport 方法中，对Import 的类进行分类，此处主要识别的是AutoConfigurationImportSelect 归属于ImprotSelect 的子类，在后续过程中会调用deferredImportSelectorHandler  中的process 方法，来完成@EnableAutoConfiguration 的加载
+1. 当启动spring boot 程序时，会先创建springApplicaiton  对象， 在对象的构造方法中，会进行一些参数的初始化工作。 最主要的是判断当前应用程序的类型以及初始化器和监听器，在这个过程中会加载整个应用程序中的spring.factories 文件，将文件的内容放到缓存中，方便后续使用
+2. springApplication 对象创建完成之后，开始执行run方法，来启动整个应用，在启动过程中， 最主要的方法有两个。 第一个是prepareConext 和 refreshContext 。这两个关键步骤中完成了自动装配的核心功能，前面的处理逻辑包含了上下文的创建，banner 的打印。 异常报告的准备等准备工作。
+3. 在prepareContext 方法中，最主要的是完成了对上下文对象的初始化操作。 包括了属性值的设置。 在整个过程中，有一个非常重要的方法叫做load ，load  主要完成一件事情，将当前启动类作为一个BeanDefinition 注册到registry 中，方便后续在BeanFactoryPostProcessor 调用执行的时候，找到主类，完成 @SpringBootApplication @EnableAutoConfiguration 等注解的解析工作
+4. 在refreshContext 方法中，会进行整个容器刷新过程，会调用spring  的refresh 方法。在自动装配中，会调用invokeBeanFactoryPostProcessor 方法来执行 BeanFactoryPostProcessor 对应的方法，这里主要是对 ConfigrationClassPostProcessor 类的处理。  在执行postProccessorBeanDefinitionRegistry 的时候，会解析处理各种注解 。包括 @PropertySource @ComponentScan @ComponentScans @Bean @Import 注解，这里最重要的是对@Import 注解的解析
+5. 在解析Import 注解的时候，会有一个getImports 的方法，从主类开始递归解析注解，把所有的Import  的注解都解析到。然后再processImport 方法中，对Import 的类进行分类，此处主要识别的是AutoConfigurationImportSelect 归属于ImprotSelect 的子类，在后续过程中会调用deferredImportSelectorHandler  中的process 方法，来完成@EnableAutoConfiguration 的加载
 
 ### 为什么springboot的jar 可以直接运行
 
@@ -240,8 +240,6 @@ protected void load(ApplicationContext context, Object[] sources) {
 
 
 
-
-
 ### Spring Boot  自定义start 
 
 1. 在resources 下创建文件夹 META-INF   并在目录下创建spring.factories 文件
@@ -249,10 +247,6 @@ protected void load(ApplicationContext context, Object[] sources) {
 3. 
 
 ### Spring Aplication run 方法
-
-
-
-
 
 ### Spring Boot 有哪些优点
 
@@ -279,8 +273,91 @@ protected void load(ApplicationContext context, Object[] sources) {
 @SpringBootApplication，主要组合包含了以下3 个注解：
 
 @SpringBootConfiguration：组合了 @Configuration 注解，实现配置文件的功能。
-@EnableAutoConfiguration：打开自动配置的功能，也可以关闭某个自动配置的选项，如关闭数据源自动配置功能：
+@EnableAutoConfiguration：打开自动配置的功能，也可以关闭某个自动配置的选项，如关闭数据源自动配置功能
+
+	1. @AutoConfigurationPackage  (@Import({Registrar.class}))
+ 	2.  @Import({AutoConfigurationImportSelector.class})
+
 @ComponentScan：标识扫描路径，因为默认是没有实际扫描路径 ，所以spring boot 扫描的路径是启动类所在的当前目录
+
+
+
+### @EnableAutoConfiguration 注解
+
+@Import({AutoConfigurationImportSelector.class}) 主要通过AutoConfigurationImportSelector 类，实现了SelectorImport 类的， 重写selectImports 方法，通过加载所有的MATE-INF/spring.factories 文件中的类
+
+1. 加载所有的MATE-INF/spring.factories 文件中的类
+2. 删除重复的类
+3. 将exclusions 的类排除
+4. 根据META-INFO/spring-autoconfigure-metadata.properties 中的ConditionOnClass 来进行class 的过滤 （也可以通过注解的方式来过滤）
+
+```java
+// 返回所有的factory 类 ，定位到 META-INF/spring.factories  
+public String[] selectImports(AnnotationMetadata annotationMetadata) {
+    if (!this.isEnabled(annotationMetadata)) {
+        return NO_IMPORTS;
+    } else {
+        AutoConfigurationImportSelector.AutoConfigurationEntry autoConfigurationEntry = this.getAutoConfigurationEntry(annotationMetadata);
+        return StringUtils.toStringArray(autoConfigurationEntry.getConfigurations());
+    }
+}
+
+    protected AutoConfigurationImportSelector.AutoConfigurationEntry getAutoConfigurationEntry(AnnotationMetadata annotationMetadata) {
+        if (!this.isEnabled(annotationMetadata)) {
+            return EMPTY_ENTRY;
+        } else {
+            AnnotationAttributes attributes = this.getAttributes(annotationMetadata);
+            List<String> configurations = this.getCandidateConfigurations(annotationMetadata, attributes);
+            configurations = this.removeDuplicates(configurations); // 删除重复的类
+            Set<String> exclusions = this.getExclusions(annotationMetadata, attributes); // 将一些设置的类排除
+            this.checkExcludedClasses(configurations, exclusions);
+            configurations.removeAll(exclusions);
+            // 根据META-INFO/spring-autoconfigure-metadata.properties 中的ConditionOnClass 来进行class 的过滤
+            configurations = this.getConfigurationClassFilter().filter(configurations); // 
+            this.fireAutoConfigurationImportEvents(configurations, exclusions);
+            return new AutoConfigurationImportSelector.AutoConfigurationEntry(configurations, exclusions);
+        }
+    }
+
+// 该方法为加载所有的 spring.factories 文件中的class 
+private static Map<String, List<String>> loadSpringFactories(@Nullable ClassLoader classLoader) {
+        MultiValueMap<String, String> result = (MultiValueMap)cache.get(classLoader);
+        if (result != null) {
+            return result;
+        } else {
+            try {
+                Enumeration<URL> urls = classLoader != null ? classLoader.getResources("META-INF/spring.factories") : ClassLoader.getSystemResources("META-INF/spring.factories");
+                LinkedMultiValueMap result = new LinkedMultiValueMap();
+
+                while(urls.hasMoreElements()) {
+                    URL url = (URL)urls.nextElement();
+                    UrlResource resource = new UrlResource(url);
+                    Properties properties = PropertiesLoaderUtils.loadProperties(resource);
+                    Iterator var6 = properties.entrySet().iterator();
+
+                    while(var6.hasNext()) {
+                        Entry<?, ?> entry = (Entry)var6.next();
+                        String factoryTypeName = ((String)entry.getKey()).trim();
+                        String[] var9 = StringUtils.commaDelimitedListToStringArray((String)entry.getValue());
+                        int var10 = var9.length;
+
+                        for(int var11 = 0; var11 < var10; ++var11) {
+                            String factoryImplementationName = var9[var11];
+                            result.add(factoryTypeName, factoryImplementationName.trim());
+                        }
+                    }
+                }
+
+                cache.put(classLoader, result);
+                return result;
+            } catch (IOException var13) {
+                throw new IllegalArgumentException("Unable to load factories from location [META-INF/spring.factories]", var13);
+            }
+        }
+    }
+
+
+```
 
 ### Spring Boot启动的时候运行一些特定的代码
 
