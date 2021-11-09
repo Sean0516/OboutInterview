@@ -127,12 +127,16 @@ JVM 中堆和栈属于不同的内存区域，使用目的也不同。栈常用�
 
 - ![image-20211019180727209](https://gitee.com/Sean0516/image/raw/master/img/image-20211019180727209.png)
 
+  使用黑白灰三种颜色进行标记在·  CMS 在对象头的markword 中进行颜色标记 
+
   黑色   自己已经被标记，fieled 都标记完成
 
   灰  自己标记完成，还没来记得急标记 fields
 
-  白色  未标记的对象
-
+  白色  未标记的对象 
+  
+  关于漏标的情况，CMS 使用写屏障来解决。 例如 在A.x=D 的时候，如果A 是黑色，D 是白色，标记A 为灰  （但是还是会存在漏标的情况）
+  
   
 
 ### 新生代与复制算法
@@ -332,11 +336,9 @@ Parallel Scavenge  并行回收
 
 ##### 老年代
 
-- CMS （三色标记）
+- CMS （三色标记） Incremental update  通过写屏障来解决漏标的情况 
 
   CMS(Concurrent Mark Sweep)收集器是一款具有划时代意义的收集器, 一款真正意义上的并发收集器,虽然现在已经有了理论意义上表现更好的G1收集器, 但现在主流互联网企业线上选用的仍是CMS(如Taobao),又称多并发低暂停的收集器
-
-  ![](http://qvi33264o.hn-bkt.clouddn.com/img/image-20210729150102785.png)
 
   它是基于标记-清除算法实现的。整个过程分4个步骤
 
@@ -344,7 +346,7 @@ Parallel Scavenge  并行回收
   2.  并发标记(CMS concurrent mark: GC Roots Tracing过程)
   3.  重新标记(CMS remark):修正并发标记期间因用户程序继续运行而导致标记产生变动的那一部分对象的标记记录
   4.  并发清除(CMS concurrent sweep: 已死对象将会就地释放)
-
+  
   初始标记、重新标记需要STW(stop the world 即：挂起用户线程)操作。因为最耗时的操作是并发标记和并发清除。所以总体上我们认为CMS的GC与用户线程是并发运行的
 
   ###### 优点 
@@ -357,7 +359,7 @@ Parallel Scavenge  并行回收
      的占用用户CPU资源, 从而导致应用程序变慢, 总吞吐量降低
   2. 无法清除浮动垃圾（GC运行到并发清除阶段时用户线程产生的垃圾），因为用户线程是需要内存的，如果浮动垃圾施放不及时，很可能就造成内存溢出，所以CMS不能像别的垃圾收集器那样等老年代几乎满了才触发，CMS提供了参数 -XX:CMSInitiatingOccupancyFraction 来设置GC触发百分比(1.6后默认92%),当然我们还得设置启用该策略 -XX:+UseCMSInitiatingOccupancyOnly
   3. 因为CMS采用标记-清除算法，所以可能会带来很多的碎片，如果碎片太多没有清理，jvm会因为无法分配大对象内存而触发GC，因此CMS提供了 -XX:+UseCMSCompactAtFullCollection 参数，它会在GC执行完后接着进行碎片整理，但是又会有个问题，碎片整理不能并发，所以必须单线程去处理，所以如果每次GC完都整理用户线程stop的时间累积会很长，所以XX:CMSFullGCsBeforeCompaction 参数设置隔几次GC进行一次碎片整理
-
+  
 - G1  （逻辑分代， 物理不分代） 三色标记  +SATB
 
   G1最大的特点是引入分区的思路，弱化分代的概念，合理利用垃圾收集各个周期的资源，解决了其他收集器甚至CMS的众多缺陷
