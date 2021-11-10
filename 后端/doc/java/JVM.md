@@ -338,15 +338,17 @@ Parallel Scavenge  并行回收
 
 - CMS （三色标记） Incremental update  通过写屏障来解决漏标的情况 
 
+  ![image-20211110205908752](https://gitee.com/Sean0516/image/raw/master/img/image-20211110205908752.png)
+
   CMS(Concurrent Mark Sweep)收集器是一款具有划时代意义的收集器, 一款真正意义上的并发收集器,虽然现在已经有了理论意义上表现更好的G1收集器, 但现在主流互联网企业线上选用的仍是CMS(如Taobao),又称多并发低暂停的收集器
 
   它是基于标记-清除算法实现的。整个过程分4个步骤
-
+  
   1.  初始标记(CMS initial mark):仅只标记一下GC Roots能直接关联到的对象, 速度很快
   2.  并发标记(CMS concurrent mark: GC Roots Tracing过程)
   3.  重新标记(CMS remark):修正并发标记期间因用户程序继续运行而导致标记产生变动的那一部分对象的标记记录
   4.  并发清除(CMS concurrent sweep: 已死对象将会就地释放)
-  
+
   初始标记、重新标记需要STW(stop the world 即：挂起用户线程)操作。因为最耗时的操作是并发标记和并发清除。所以总体上我们认为CMS的GC与用户线程是并发运行的
 
   ###### 优点 
@@ -354,7 +356,7 @@ Parallel Scavenge  并行回收
   并发收集、低停顿
 
   ###### 缺点
-
+  
   1. CMS默认启动的回收线程数=(CPU数目+3)*4  当CPU数>4时, GC线程最多占用不超过25%的CPU资源, 但是当CPU数<=4时, GC线程可能就会过多
      的占用用户CPU资源, 从而导致应用程序变慢, 总吞吐量降低
   2. 无法清除浮动垃圾（GC运行到并发清除阶段时用户线程产生的垃圾），因为用户线程是需要内存的，如果浮动垃圾施放不及时，很可能就造成内存溢出，所以CMS不能像别的垃圾收集器那样等老年代几乎满了才触发，CMS提供了参数 -XX:CMSInitiatingOccupancyFraction 来设置GC触发百分比(1.6后默认92%),当然我们还得设置启用该策略 -XX:+UseCMSInitiatingOccupancyOnly
@@ -362,9 +364,19 @@ Parallel Scavenge  并行回收
   
 - G1  （逻辑分代， 物理不分代） 三色标记  +SATB
 
+  ![image-20211110210000054](https://gitee.com/Sean0516/image/raw/master/img/image-20211110210000054.png)
+
+  
+
+  ##### SATB  snapshot at  the  beginning 
+
+  在起始的时候做一个快照，在B-> D 消失时，需要把这个引用推到GC 的堆栈，保证D 还能被GC 扫描到，只用扫描那些Region  引用到D 这个Region 
+
+  
+
   G1最大的特点是引入分区的思路，弱化分代的概念，合理利用垃圾收集各个周期的资源，解决了其他收集器甚至CMS的众多缺陷
 
-  因为每个区都有E、S、O代，所以在G1中，不需要对整个Eden等代进行回收，而是寻找可回收对象比较多的区，然后进行回收（虽然也需要STW操作，但是花费的时间是很少的），保证高效率
+  因为每个区都有Eden、Survivor、Old代，所以在G1中，不需要对整个Eden等代进行回收，而是寻找可回收对象比较多的区，然后进行回收（虽然也需要STW操作，但是花费的时间是很少的），保证高效率
 
   ###### 新生代收集
 
