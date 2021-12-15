@@ -208,3 +208,4 @@ Mybatis中有一级缓存和二级缓存，默认情况下一级缓存是开启�
   1. Mybatis 全局配置中启用二级缓存配置
   2. 在对应的 Mapper.xml 中配置 cache 节点
   3. 在对应的 select 查询节点中添加 useCache=true
+

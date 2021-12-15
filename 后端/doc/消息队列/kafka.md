@@ -175,5 +175,5 @@ max.poll.records：此 设置 限制 每次 调用 poll 返回 的消 息数 ，
 
 Kafka的GroupCoordinator组件提供对该主题完整的管理功能，包括该主题的创建、写入、读取和Leader维护等。
 
-# Elastic Search
+
 
