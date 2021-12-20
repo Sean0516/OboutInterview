@@ -60,7 +60,7 @@ boolean result = obj instanceof Class
 
 
 
-```
+```java
 public class Main {
 public static void main(String[] args) {
     Integer i1 = 100;
