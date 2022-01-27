@@ -2,7 +2,7 @@
 
 
 
-
+![JVM](https://gitee.com/Sean0516/image/raw/master/img/JVM.png)
 
 
 

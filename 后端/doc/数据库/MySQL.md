@@ -1,3 +1,5 @@
+![mysql](https://gitee.com/Sean0516/image/raw/master/img/mysql.png)
+
 ## MySql 构成
 
 ### MySQL由哪些部分组成, 分别用来做什么

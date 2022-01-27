@@ -1,4 +1,6 @@
-# 
+
+
+![61f0bda37ac33_61f0bda3af36d](https://gitee.com/Sean0516/image/raw/master/img/61f0bda37ac33_61f0bda3af36d.png)
 
 ![image-20210830173211265](https://gitee.com/Sean0516/image/raw/master/img/image-20210830173211265.png)
 
@@ -195,6 +197,8 @@ Spring 框架的核心是 Spring 容器。容器创建对象，将它们装配�
 
 ### refresh方法
 
+![image-20220126122445313](https://gitee.com/Sean0516/image/raw/master/img/image-20220126122445313.png)
+
 ```java
 public void refresh() throws BeansException, IllegalStateException {
    synchronized (this.startupShutdownMonitor) {
@@ -310,6 +314,10 @@ ApplicationContext - ApplicationContext 接口扩展了 BeanFactory 接口。它
 ### 哪些是重要的 bean 生命周期方法？
 
 有两个重要的 bean 生命周期方法，第一个是 setup ， 它是在容器加载 bean的时候被调用。第二个方法是 teardown 它是在容器卸载类的时候被调用。The bean 标签有两个重要的属性（init-method 和 destroy-method）。用它们你可以自己定制初始化和注销方法。它们也有相应的注解（@PostConstruct 和@PreDestroy）
+
+实现InitializingBean，重写afterPropertiesSet方法  
+
+实现 DisposableBean，重写destroy方法；
 
 ### 配置Bean 有那几种方法
 
@@ -596,6 +604,8 @@ Autowired  通过bean 的后置处理器进行解析的。
 
 
 ## AOP
+
+![image-20220126122352492](https://gitee.com/Sean0516/image/raw/master/img/image-20220126122352492.png)
 
 ### AOP 面向切面编程
 

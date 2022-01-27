@@ -1,3 +1,9 @@
+![61f0c0dc6ed80_61f0c0dca2f26](https://gitee.com/Sean0516/image/raw/master/img/61f0c0dc6ed80_61f0c0dca2f26.png)
+
+
+
+![SpringBoot启动流程](https://gitee.com/Sean0516/image/raw/master/img/SpringBoot%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B.png)
+
 ### new SpringApplication 执行的方法
 
 ```java
